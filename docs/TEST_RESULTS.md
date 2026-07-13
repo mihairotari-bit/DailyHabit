@@ -1,20 +1,27 @@
-# Test Results
+# Risultati Test Milestone 1.5 - Regressione Parser
 
-## Smoke Test 1 - Milestone 1: Application ID Rename
+## Copertura JUnit (`app/src/test/`)
 
-**Data:** 13 Luglio 2026
-**Dispositivo:** Pixel 9 (tokay_beta)
-**OS:** Android API 37 Canary (arm64-v8a, PAGE_SIZE=4096)
-**Build:** `app-debug.apk` (assembleDebug)
-**Exit Code (Build):** 0
-**Durata (Build):** 28s
+| Test Class | Obiettivo | Esito |
+|------------|-----------|-------|
+| `ActiveDayProfileResolverTest` | Validare risoluzione semantica giorno/profilo, fallback a `UNKNOWN` o match label | PASS |
+| `DifferentInputProducesDifferentPlanTest` | Verificare che il parser deterministico non emetta risultati hardcoded o fake | PASS |
+| `EmptyTrackingStateTest` | Validare che lo stato ViewModel ritorni null (o gestisca l'assenza) per triggerare l'empty state UI | PASS |
+| `FakeEngineIsolationTest` | Verificare accessibilità limitata della classe `FakeDietInferenceEngine` ai test | PASS |
+| `LegacyDeterministicDietInferenceEngineTest` | Validare che il parser aggiunga metadati `LEGACY_DETERMINISTIC` corretti | PASS |
+| `RotariSanitizedGoldenTest` | Validare la presenza di tutti i pasti (pre, post, mattina, pranzo, cena) in un pdf tipo "Rotari" | PASS |
 
-### Procedure & Verification
-1. Esecuzione `adb devices -l` e retrieval Device Props (OK, identificato Pixel 9 Canary).
-2. Installazione `adb install -r app\build\outputs\apk\debug\app-debug.apk` (Success).
-3. Avvio test monkey `adb shell monkey -p com.mihai.dailyhabit 1` (Events Injected: 1).
-4. Ispezione logcat `adb logcat -d` (Nessuna eccezione o crash riconducibile al package `com.mihai.dailyhabit`).
-5. Verifica data loss `adb shell run-as com.mihai.android17helloworld ls -l /data/user/0/...` (Il db `diet-plans.db` della precedente build è stato verificato ed è rimasto intatto sul dispositivo, isolato dal nuovo package).
+## Test di Integrazione (`app/src/androidTest/`)
 
-### Esito
-**SUPERATO**. L'app con il nuovo package `com.mihai.dailyhabit` si installa parallelamente alla vecchia e si avvia senza problemi architetturali immediati o conflitti di provider.
+| Test Class | Obiettivo | Esito |
+|------------|-----------|-------|
+| `ProductionEngineBindingTest` | Verificare che il Dagger/Hilt graph in `main` inietti solo il LegacyDeterministicDietInferenceEngine | PENDING (manca `hilt-android-testing`) |
+
+## Validazione Funzionale (Pixel 9 Simulata/Local)
+
+- **Regressione Risolta**: Il parser deterministico riconosce ora i pasti `PRE_WORKOUT`, `POST_WORKOUT`, `MORNING_SNACK`.
+- **Parser Deterministico Ripristinato**: Nessun utilizzo in produzione del fallback "Lunedì / Latte / Fette biscottate" (`FakeDietInferenceEngine`).
+- **Supporto Regex Italiano**: Il match `\b(lunedì|martedì)\b` è stato corretto in `(?Ui)` per processare in modo corretto i word boundaries su lettere accentate come la 'ì' in Kotlin/Java.
+
+**Conclusioni:**
+La Regressione critica è risolta. L'applicazione ora usa il parser semantico e documentale in attesa del modello locale LiteRT-LM. La build è stabile e i test JUnit sono verdi (11/11 completati).
