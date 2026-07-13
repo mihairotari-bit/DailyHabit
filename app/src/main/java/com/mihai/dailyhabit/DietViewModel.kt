@@ -46,13 +46,9 @@ class DietViewModel @Inject constructor(
                     is DocumentContent.Text -> content.value
                     is DocumentContent.Pdf -> textRecognition.recognize(content.pages)
                 }
-                android.util.Log.e("MLKIT_OCR_OUTPUT", "--- START OCR ---")
-                android.util.Log.e("MLKIT_OCR_OUTPUT", text)
-                android.util.Log.e("MLKIT_OCR_OUTPUT", "--- END OCR ---")
+                // OCR Text logging removed for privacy.
                 val parsed = parser.parse(text)
-                android.util.Log.e("PARSER_OUTPUT", "--- START PLAN ---")
-                android.util.Log.e("PARSER_OUTPUT", parsed.toString())
-                android.util.Log.e("PARSER_OUTPUT", "--- END PLAN ---")
+                // Parser Output logging removed for privacy.
                 parsed.also { require(it.days.isNotEmpty()) { "Nessun pasto riconosciuto. Prova un TXT con intestazioni di giorno e pasto." } }
             }.onSuccess { _state.value = DietUiState.Review(it) }
                 .onFailure { 

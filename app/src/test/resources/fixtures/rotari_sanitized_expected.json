@@ -1,0 +1,204 @@
+{
+  "parserEngine": "LEGACY_DETERMINISTIC",
+  "extractionMethod": "PdfBox + Heuristics",
+  "isTestData": false,
+  "type": "GENERAL_CHOICE",
+  "days": [
+    {
+      "day": "Giorno con allenamento",
+      "profileType": "TRAINING",
+      "meals": [
+        {
+          "type": "PRE_WORKOUT",
+          "hasLunchAlternatives": false,
+          "groups": [
+            {
+              "alternatives": [
+                {
+                  "name": "EAA",
+                  "quantity": "10 g"
+                },
+                {
+                  "name": "Maltodestrine",
+                  "quantity": "50 g"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "POST_WORKOUT",
+          "hasLunchAlternatives": false,
+          "groups": [
+            {
+              "alternatives": [
+                {
+                  "name": "Whey protein",
+                  "quantity": "30 g"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "BREAKFAST",
+          "hasLunchAlternatives": false,
+          "groups": [
+            {
+              "alternatives": [
+                {
+                  "name": "Latte parzialmente scremato",
+                  "quantity": "200 ml"
+                },
+                {
+                  "name": "Whey protein",
+                  "quantity": "30 g"
+                },
+                {
+                  "name": "Fette biscottate",
+                  "quantity": "30 g"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "MORNING_SNACK",
+          "hasLunchAlternatives": false,
+          "groups": [
+            {
+              "alternatives": [
+                {
+                  "name": "Mela",
+                  "quantity": "1 pz"
+                },
+                {
+                  "name": "Mandorle",
+                  "quantity": "15 g"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "LUNCH",
+          "hasLunchAlternatives": false,
+          "groups": [
+            {
+              "alternatives": [
+                {
+                  "name": "Riso basmati",
+                  "quantity": "100 g"
+                },
+                {
+                  "name": "Petto di pollo",
+                  "quantity": "150 g"
+                },
+                {
+                  "name": "Zucchine",
+                  "quantity": "150 g"
+                },
+                {
+                  "name": "Olio EVO",
+                  "quantity": "10 g"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SNACK",
+          "hasLunchAlternatives": false,
+          "groups": [
+            {
+              "alternatives": [
+                {
+                  "name": "Pera",
+                  "quantity": "1 pz"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "DINNER",
+          "hasLunchAlternatives": true,
+          "groups": []
+        }
+      ]
+    },
+    {
+      "day": "Giorno senza allenamento",
+      "profileType": "REST",
+      "meals": [
+        {
+          "type": "BREAKFAST",
+          "hasLunchAlternatives": false,
+          "groups": [
+            {
+              "alternatives": [
+                {
+                  "name": "Latte parzialmente scremato",
+                  "quantity": "200 ml"
+                },
+                {
+                  "name": "Whey protein",
+                  "quantity": "30 g"
+                },
+                {
+                  "name": "Fette biscottate",
+                  "quantity": "30 g"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "LUNCH",
+          "hasLunchAlternatives": false,
+          "groups": [
+            {
+              "alternatives": [
+                {
+                  "name": "Riso basmati",
+                  "quantity": "80 g"
+                },
+                {
+                  "name": "Petto di pollo",
+                  "quantity": "150 g"
+                },
+                {
+                  "name": "Zucchine",
+                  "quantity": "150 g"
+                },
+                {
+                  "name": "Olio EVO",
+                  "quantity": "10 g"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SNACK",
+          "hasLunchAlternatives": false,
+          "groups": [
+            {
+              "alternatives": [
+                {
+                  "name": "Pera",
+                  "quantity": "1 pz"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "DINNER",
+          "hasLunchAlternatives": true,
+          "groups": []
+        }
+      ]
+    }
+  ]
+}

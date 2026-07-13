@@ -1,0 +1,53 @@
+NOME: Paziente Test
+Età: 30
+Email: test@example.com
+
+Giorno con allenamento
+
+Pre workout
+10 g EAA
+50 g Maltodestrine
+
+Colazione
+200 ml Latte parzialmente scremato
+30 g Whey protein
+30 g Fette biscottate
+
+Spuntino mattutino
+1 pz Mela
+15 g Mandorle
+
+Pranzo
+100 g Riso basmati
+150 g Petto di pollo
+150 g Zucchine
+10 g Olio EVO
+
+Merenda
+1 pz Pera
+
+Post workout
+30 g Whey protein
+
+Cena
+Vedi le alternative del pranzo
+
+
+Giorno senza allenamento
+
+Colazione
+200 ml Latte parzialmente scremato
+30 g Whey protein
+30 g Fette biscottate
+
+Pranzo
+80 g Riso basmati
+150 g Petto di pollo
+150 g Zucchine
+10 g Olio EVO
+
+Merenda
+1 pz Pera
+
+Cena
+Vedi le alternative del pranzo

@@ -15,9 +15,14 @@ android {
     defaultConfig {
         applicationId = "com.mihai.dailyhabit"
         minSdk = 35
-        targetSdk = 37
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+
+        testInstrumentationRunner = "com.mihai.dailyhabit.HiltTestRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
     }
 
     buildFeatures { compose = true; buildConfig = true }
@@ -48,5 +53,9 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.hilt.testing)
+    kspAndroidTest(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

@@ -84,7 +84,7 @@ class DietParser @Inject constructor() {
     }
 
     private fun detectPlanType(text: String): PlanType {
-        val weekRegex = Regex("(?Ui)\\b(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?:\\b|\\s|$)")
+        val weekRegex = Regex("(?i)(?:^|\\s)(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?:\\s|$)")
         val generalRegex = Regex("(?i)\\b(giorno\\s+con\\s+allenamento|giorno\\s+senza\\s+allenamento)\\b")
         var hasWeekly = false
         var hasGeneral = false
@@ -118,7 +118,7 @@ class DietParser @Inject constructor() {
         return chunks
     }
     private fun dayFor(line: String): String? {
-        val weekMatch = Regex("(?Ui)\\b(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?:\\b|\\s|$)").find(line)
+        val weekMatch = Regex("(?i)(?:^|\\s)(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?:\\s|$)").find(line)
         if (weekMatch != null) return weekMatch.groupValues[1].trim().replaceFirstChar { it.uppercase() }
         if (DAY_WITH_WORKOUT.containsMatchIn(line)) return "Giorno con allenamento"
         if (DAY_WITHOUT_WORKOUT.containsMatchIn(line)) return "Giorno senza allenamento"
