@@ -80,6 +80,27 @@ class DietViewModel @Inject constructor(
 
     fun save() {
         val plan = (_state.value as? DietUiState.Review)?.plan ?: return
+        
+        // Valutazione regole:
+        if (plan.isTestData || plan.parserEngine == ParserEngine.FAKE_TEST) {
+            _state.value = DietUiState.Error("I dati di test non possono essere salvati in produzione.")
+            return
+        }
+        if (plan.days.isEmpty()) {
+            _state.value = DietUiState.Error("Il piano deve avere almeno un profilo/giorno.")
+            return
+        }
+        val hasMeals = plan.days.any { it.meals.isNotEmpty() }
+        if (!hasMeals) {
+            _state.value = DietUiState.Error("Il piano deve avere almeno un pasto.")
+            return
+        }
+        val hasFoods = plan.days.any { day -> day.meals.any { meal -> meal.groups.isNotEmpty() || meal.hasLunchAlternatives } }
+        if (!hasFoods) {
+            _state.value = DietUiState.Error("Nessun alimento o riferimento valido trovato.")
+            return
+        }
+        
         _state.value = DietUiState.Saving
         viewModelScope.launch { runCatching { repository.save(plan) }
             .onSuccess { _state.value = DietUiState.Saved(it) }

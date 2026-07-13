@@ -7,14 +7,30 @@ import java.util.UUID
 enum class PlanType { WEEKLY, GENERAL_CHOICE, UNKNOWN }
 
 @Serializable
+enum class ParserEngine { LEGACY_DETERMINISTIC, LITERT_GEMMA4_E2B, FAKE_TEST }
+
+@Serializable
+enum class DayProfileType { TRAINING, REST, WEEKDAY, CUSTOM, UNKNOWN }
+
+@Serializable
 data class DietPlan(
     val title: String = "Piano alimentare",
     val type: PlanType = PlanType.UNKNOWN,
     val days: List<DailyMeals>,
+    val parserEngine: ParserEngine = ParserEngine.LEGACY_DETERMINISTIC,
+    val parserVersion: String = "1.0",
+    val extractionMethod: String = "Unknown",
+    val isTestData: Boolean = false,
+    val sourceFileName: String? = null,
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 @Serializable
-data class DailyMeals(val day: String, val meals: List<Meal>)
+data class DailyMeals(
+    val day: String,
+    val meals: List<Meal>,
+    val profileType: DayProfileType = DayProfileType.UNKNOWN
+)
 
 @Serializable
 data class Meal(
@@ -33,7 +49,7 @@ data class OptionGroup(
 @Serializable
 enum class MealType(val label: String) {
     PRE_WORKOUT("Pre-workout"), POST_WORKOUT("Post-allenamento"), BREAKFAST("Colazione"),
-    LUNCH("Pranzo"), SNACK("Merenda"), DINNER("Cena");
+    MORNING_SNACK("Spuntino mattutino"), LUNCH("Pranzo"), SNACK("Merenda"), DINNER("Cena");
 }
 
 @Serializable

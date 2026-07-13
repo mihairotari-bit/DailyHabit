@@ -46,5 +46,7 @@ dependencies {
     implementation(libs.google.ai.edge.litertlm)
     implementation(libs.pdfbox.android)
     implementation(libs.work.runtime.ktx)
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

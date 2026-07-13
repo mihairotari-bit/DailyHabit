@@ -31,7 +31,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DailyTrackingViewModel @Inject constructor(
-    private val repository: DietPlanRepository
+    private val repository: DietPlanRepository,
+    val profileResolver: ActiveDayProfileResolver
 ) : ViewModel() {
     private val _plan = MutableStateFlow<DietPlan?>(null)
     val plan = _plan.asStateFlow()
@@ -100,22 +101,40 @@ fun DailyTrackingScreen(viewModel: DailyTrackingViewModel, onNewPlan: () -> Unit
                 DailyWelcomeScreen(onWorkout = { viewModel.setTrained(true) }, onRest = { viewModel.setTrained(false) }, onNewPlan = onNewPlan, onToggleTheme = onToggleTheme)
             } else if (selectedMeal == null) {
                 Text("Che pasto stai facendo?", style = MaterialTheme.typography.headlineMedium)
-                val dayLabel = if (trained == true) "Giorno con allenamento" else "Giorno senza allenamento"
-                val meals = plan?.days?.find { it.day.equals(dayLabel, true) }?.meals ?: emptyList()
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
-                    items(meals) { meal ->
-                        ElevatedCard(onClick = { viewModel.selectMeal(meal.type) }, Modifier.fillMaxWidth()) {
-                            Text(meal.type.label, Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
+                
+                val reqType = if (trained == true) DayProfileType.TRAINING else DayProfileType.REST
+                val resolvedDay = viewModel.profileResolver.resolve(plan!!, reqType)
+                val meals = resolvedDay?.meals ?: emptyList()
+                
+                if (meals.isEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Nessun pasto disponibile per il profilo selezionato", color = MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.height(16.dp))
+                        Button(onClick = { viewModel.setTrained(null) }) { Text("Cambia giorno/profilo") }
+                        OutlinedButton(onClick = { /* TODO navigate review */ }) { Text("Rivedi piano") }
+                        TextButton(onClick = onNewPlan) { Text("Importa nuovamente") }
+                    }
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
+                        items(meals) { meal ->
+                            ElevatedCard(onClick = { viewModel.selectMeal(meal.type) }, Modifier.fillMaxWidth()) {
+                                Text(meal.type.label, Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
+                            }
                         }
                     }
-                }
-                TextButton(onClick = { viewModel.setTrained(null) }, Modifier.fillMaxWidth()) {
-                    Text("Indietro")
+                    TextButton(onClick = { viewModel.setTrained(null) }, Modifier.fillMaxWidth()) {
+                        Text("Indietro")
+                    }
                 }
             } else {
                 Text(selectedMeal!!.label, style = MaterialTheme.typography.headlineMedium)
-                val dayLabel = if (trained == true) "Giorno con allenamento" else "Giorno senza allenamento"
-                val groups = plan?.days?.find { it.day.equals(dayLabel, true) }?.meals?.find { it.type == selectedMeal }?.groups ?: emptyList()
+                
+                val reqType = if (trained == true) DayProfileType.TRAINING else DayProfileType.REST
+                val groups = viewModel.profileResolver.resolve(plan!!, reqType)?.meals?.find { it.type == selectedMeal }?.groups ?: emptyList()
                 
                 LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(groups) { group ->

@@ -62,12 +62,21 @@ fun ReviewPlanScreen(plan: DietPlan, onBack: () -> Unit, onConfirm: () -> Unit, 
             Surface(onClick = onBack, shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(48.dp)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.ArrowBack, "Indietro") } }
             Spacer(Modifier.weight(1f))
         }
+        if (plan.isTestData || plan.parserEngine == ParserEngine.FAKE_TEST) {
+            Box(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.errorContainer).padding(16.dp)) {
+                Text("Dati di test", color = MaterialTheme.colorScheme.onErrorContainer, fontWeight = FontWeight.Bold)
+            }
+        }
         ReviewHero(plan.days.size)
         LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             itemsIndexed(plan.days) { dayIndex, day -> ReviewDayCard(dayIndex, day, onFoodChange) }
             item { Spacer(Modifier.height(4.dp)) }
         }
-        ConfirmButton(onConfirm)
+        val isTest = plan.isTestData || plan.parserEngine == ParserEngine.FAKE_TEST
+        ConfirmButton(
+            onConfirm = { if (!isTest) onConfirm() },
+            enabled = !isTest
+        )
     }
 }
 
@@ -123,9 +132,10 @@ fun ReviewFoodRow(food: FoodItem, onNameChanged: (String) -> Unit, onQuantityCha
     }
 }
 
-@Composable private fun ConfirmButton(onConfirm: () -> Unit) {
-    Surface(onClick = onConfirm, modifier = Modifier.fillMaxWidth().padding(20.dp).height(56.dp), shape = RoundedCornerShape(50), color = Color.Transparent) {
-        Row(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color(0xFF5C9246), Color(0xFF85B654)))).padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+@Composable private fun ConfirmButton(onConfirm: () -> Unit, enabled: Boolean = true) {
+    Surface(onClick = { if (enabled) onConfirm() }, modifier = Modifier.fillMaxWidth().padding(20.dp).height(56.dp), shape = RoundedCornerShape(50), color = Color.Transparent) {
+        val bgBrush = if (enabled) Brush.horizontalGradient(listOf(Color(0xFF5C9246), Color(0xFF85B654))) else Brush.horizontalGradient(listOf(Color.Gray, Color.LightGray))
+        Row(Modifier.fillMaxSize().background(bgBrush).padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
             Spacer(Modifier.weight(1f)); Text("Conferma piano", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 17.sp); Spacer(Modifier.weight(1f)); Icon(Icons.Rounded.ArrowForward, null, tint = Color.White)
         }
     }

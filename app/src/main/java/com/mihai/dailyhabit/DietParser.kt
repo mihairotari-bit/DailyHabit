@@ -4,10 +4,6 @@ import android.util.Log
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * A deterministic finite-state parser. It intentionally has no probabilistic or AI
- * branch: each transition is driven by a document heading, option marker or food regex.
- */
 @Singleton
 class DietParser @Inject constructor() {
     fun parse(ocrText: String): DietPlan {
@@ -78,12 +74,17 @@ class DietParser @Inject constructor() {
         }
 
         return DietPlan(type = type, days = plans.map { (label, meals) ->
-            DailyMeals(label, STRICT_MEAL_ORDER.mapNotNull { type -> meals[type]?.toMeal(type) })
+            val profile = when {
+                label.contains("con allenamento", ignoreCase = true) -> DayProfileType.TRAINING
+                label.contains("senza allenamento", ignoreCase = true) -> DayProfileType.REST
+                else -> DayProfileType.UNKNOWN
+            }
+            DailyMeals(label, STRICT_MEAL_ORDER.mapNotNull { t -> meals[t]?.toMeal(t) }, profileType = profile)
         })
     }
 
     private fun detectPlanType(text: String): PlanType {
-        val weekRegex = Regex("(?i)\\b(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)\\b")
+        val weekRegex = Regex("(?Ui)\\b(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?:\\b|\\s|$)")
         val generalRegex = Regex("(?i)\\b(giorno\\s+con\\s+allenamento|giorno\\s+senza\\s+allenamento)\\b")
         var hasWeekly = false
         var hasGeneral = false
@@ -100,10 +101,7 @@ class DietParser @Inject constructor() {
 
     private fun normalize(input: String): String = input.replace(Regex("\\s+"), " ").trim()
     /**
-     * OCR may split one food across visual rows.  This deterministic chunker keeps
-     * headings standalone and joins only non-structural fragments until a complete
-     * quantity/name expression can be parsed.  It mirrors the standard
-     * normalization → tokenization → extraction pipeline used in text parsers.
+     * OCR may split one food across visual rows.
      */
     private fun chunkOcrLines(text: String): List<String> {
         val source = text.lineSequence().map(::normalize).filter(String::isNotEmpty).toList()
@@ -120,14 +118,17 @@ class DietParser @Inject constructor() {
         return chunks
     }
     private fun dayFor(line: String): String? {
-        val weekMatch = Regex("(?i)\\b(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)\\b").find(line)
-        if (weekMatch != null) return weekMatch.value.trim().replaceFirstChar { it.uppercase() }
+        val weekMatch = Regex("(?Ui)\\b(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?:\\b|\\s|$)").find(line)
+        if (weekMatch != null) return weekMatch.groupValues[1].trim().replaceFirstChar { it.uppercase() }
         if (DAY_WITH_WORKOUT.containsMatchIn(line)) return "Giorno con allenamento"
         if (DAY_WITHOUT_WORKOUT.containsMatchIn(line)) return "Giorno senza allenamento"
         return null
     }
     private fun mealFor(line: String): MealType? = when {
+        Regex("(?i)^(pre[- ]?workout|pre[- ]?allenamento)\\b").containsMatchIn(line) -> MealType.PRE_WORKOUT
+        Regex("(?i)^(post[- ]?workout|post[- ]?allenamento)\\b").containsMatchIn(line) -> MealType.POST_WORKOUT
         Regex("(?i)^colazione\\b").containsMatchIn(line) -> MealType.BREAKFAST
+        Regex("(?i)^spuntino\\s+mattutino\\b").containsMatchIn(line) -> MealType.MORNING_SNACK
         Regex("(?i)^pranzo\\b").containsMatchIn(line) -> MealType.LUNCH
         Regex("(?i)^(merenda|spuntino)\\b").containsMatchIn(line) -> MealType.SNACK
         Regex("(?i)^cena\\b").containsMatchIn(line) -> MealType.DINNER
@@ -188,7 +189,7 @@ class DietParser @Inject constructor() {
     }
 
     private companion object {
-        val STRICT_MEAL_ORDER = listOf(MealType.BREAKFAST, MealType.LUNCH, MealType.SNACK, MealType.DINNER)
+        val STRICT_MEAL_ORDER = listOf(MealType.PRE_WORKOUT, MealType.POST_WORKOUT, MealType.BREAKFAST, MealType.MORNING_SNACK, MealType.LUNCH, MealType.SNACK, MealType.DINNER)
         val DAY_WITH_WORKOUT = Regex("(?i).*\\bgiorno\\s+con\\s+allenamento\\b.*")
         val DAY_WITHOUT_WORKOUT = Regex("(?i).*\\bgiorno\\s+senza\\s+allenamento\\b.*")
         val OPTION_MARKER = Regex("(?i)\\bopzione\\s*\\d+\\b")

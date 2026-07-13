@@ -11,6 +11,6 @@ abstract class EngineModule {
 
     @Binds
     abstract fun bindDietInferenceEngine(
-        fakeEngine: FakeDietInferenceEngine
+        legacyEngine: LegacyDeterministicDietInferenceEngine
     ): DietInferenceEngine
 }
