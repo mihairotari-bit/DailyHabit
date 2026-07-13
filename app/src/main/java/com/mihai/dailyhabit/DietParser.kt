@@ -125,7 +125,7 @@ class DietParser @Inject constructor() {
         return null
     }
     private fun mealFor(line: String): MealType? = when {
-        Regex("(?i)^(pre[- ]?workout|pre[- ]?allenamento)\\b").containsMatchIn(line) -> MealType.PRE_WORKOUT
+        Regex("(?i)^(pre[- ]?workout|pre[- ]?allenamento|prewout)\\b").containsMatchIn(line) -> MealType.PRE_WORKOUT
         Regex("(?i)^(post[- ]?workout|post[- ]?allenamento)\\b").containsMatchIn(line) -> MealType.POST_WORKOUT
         Regex("(?i)^colazione\\b").containsMatchIn(line) -> MealType.BREAKFAST
         Regex("(?i)^spuntino\\s+mattutino\\b").containsMatchIn(line) -> MealType.MORNING_SNACK
@@ -137,6 +137,7 @@ class DietParser @Inject constructor() {
     private fun parseFood(input: String): FoodItem? {
         var line = input.replace(Regex("(?i)^oppure\\s*"), "").trim()
         if (line.isBlank() || LUNCH_REFERENCE.containsMatchIn(line)) return null
+        if (line.lowercase().startsWith("note:")) return null
         
         var calories: Int? = null
         var proteinGrams: Float? = null

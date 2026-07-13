@@ -9,7 +9,7 @@ class LegacyDeterministicDietInferenceEngine @Inject constructor(
         val plan = parser.parse(input)
         return plan.copy(
             parserEngine = ParserEngine.LEGACY_DETERMINISTIC,
-            extractionMethod = "PdfBox + Heuristics",
+            extractionMethod = "ML Kit OCR + LegacyDeterministicParser",
             isTestData = false
         )
     }
