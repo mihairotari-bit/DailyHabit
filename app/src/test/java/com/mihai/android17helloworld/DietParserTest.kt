@@ -1,11 +1,15 @@
 package com.mihai.dailyhabit
 
+import com.mihai.dailyhabit.DietParser
+import com.mihai.dailyhabit.DietTextPreprocessor
 import org.junit.Test
 import org.junit.Assert.*
 
 class DietParserTest {
     @Test
     fun testParse() {
+        val preprocessor = DietTextPreprocessor()
+        val parser = DietParser(preprocessor)
         val text = """
 GIORNO CON ALLENAMENTO
 PREWOUT
@@ -23,7 +27,6 @@ oppure 50g fiocchi di mais cornflakes
 +
 100g frutta fresca
         """.trimIndent()
-        val parser = DietParser()
         val plan = parser.parse(text)
         assertTrue(plan.days.isNotEmpty())
     }

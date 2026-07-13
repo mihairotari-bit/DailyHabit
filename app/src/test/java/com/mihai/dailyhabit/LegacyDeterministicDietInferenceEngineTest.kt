@@ -6,7 +6,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class LegacyDeterministicDietInferenceEngineTest {
-    private val parser = DietParser()
+
+    private val preprocessor = DietTextPreprocessor()
+    private val parser = DietParser(preprocessor)
     private val engine = LegacyDeterministicDietInferenceEngine(parser)
 
     @Test

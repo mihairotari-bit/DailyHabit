@@ -10,6 +10,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import dagger.hilt.android.AndroidEntryPoint
 
+import androidx.compose.runtime.collectAsState
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val dietViewModel: DietViewModel by viewModels()
@@ -18,12 +20,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // The Android 12+ system splash already displays the launcher icon. Do not
-        // layer a second Compose logo on top of it.
+        val themePreferences = ThemePreferences(this)
         setContent {
-            var isDarkTheme by rememberSaveable { mutableStateOf(false) }
+            val isDarkTheme by themePreferences.isDarkTheme.collectAsState()
             HelloTheme(darkTheme = isDarkTheme) {
-                DietApp(dietViewModel, trackingViewModel, historyViewModel, isDarkTheme) { isDarkTheme = !isDarkTheme }
+                DietApp(dietViewModel, trackingViewModel, historyViewModel, isDarkTheme) { 
+                    themePreferences.toggleTheme() 
+                }
             }
         }
     }

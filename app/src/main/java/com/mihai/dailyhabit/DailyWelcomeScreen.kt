@@ -48,10 +48,47 @@ fun DailyWelcomeScreen(onWorkout: () -> Unit, onRest: () -> Unit, onNewPlan: () 
             Surface(onClick = onNewPlan, modifier = Modifier.size(56.dp), shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primary, shadowElevation = 6.dp) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Add, "Carica un nuovo piano", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp)) } }
             Box {
                 Surface(onClick = { menuExpanded = true }, modifier = Modifier.size(56.dp), shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primaryContainer) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Menu, "Menu", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp)) } }
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    DropdownMenuItem(text = { Text("Cambia Tema") }, onClick = { onToggleTheme(); menuExpanded = false })
-                    DropdownMenuItem(text = { Text("Impostazioni") }, onClick = { menuExpanded = false })
-                    DropdownMenuItem(text = { Text("Informazioni") }, onClick = { menuExpanded = false })
+                DropdownMenu(
+                    expanded = menuExpanded, 
+                    onDismissRequest = { menuExpanded = false },
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer).padding(8.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "☀️", style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    androidx.compose.material3.Switch(
+                                        checked = false, // We'll just toggle on click for now
+                                        onCheckedChange = { onToggleTheme() },
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "🌙", style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            }
+                        },
+                        onClick = { onToggleTheme() }
+                    )
+                    androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.surfaceVariant)
+                    DropdownMenuItem(
+                        text = { Text("Impostazioni", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface) }, 
+                        onClick = { menuExpanded = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Informazioni", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface) }, 
+                        onClick = { menuExpanded = false }
+                    )
                 }
             }
         }

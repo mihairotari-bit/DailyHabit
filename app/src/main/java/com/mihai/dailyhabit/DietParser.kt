@@ -5,19 +5,29 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DietParser @Inject constructor() {
+class DietParser @Inject constructor(
+    private val preprocessor: DietTextPreprocessor
+) {
     fun parse(ocrText: String): DietPlan {
-        val type = detectPlanType(ocrText)
+        val sanitizedText = preprocessor.preprocess(ocrText)
+        val type = detectPlanType(sanitizedText)
         val plans = linkedMapOf<String, LinkedHashMap<MealType, MealDraft>>()
         
-        val splitRegex = Regex("(?i)(.*giorno\\s+senza\\s+allenamento.*)")
-        val match = splitRegex.find(ocrText)
+        // Find boundaries for days
+        val dayMatches = Regex("(?i).*\\bgiorno\\s+(con|senza)\\s+allenamento\\b.*").findAll(sanitizedText).toList()
+        
         val blocks = mutableListOf<String>()
-        if (match != null) {
-            blocks.add(ocrText.substring(0, match.range.first))
-            blocks.add(ocrText.substring(match.range.first))
+        if (dayMatches.isEmpty()) {
+            blocks.add(sanitizedText)
         } else {
-            blocks.add(ocrText)
+            for (i in dayMatches.indices) {
+                val start = dayMatches[i].range.first
+                val end = if (i + 1 < dayMatches.size) dayMatches[i + 1].range.first else sanitizedText.length
+                blocks.add(sanitizedText.substring(start, end))
+            }
+            // Add anything before the first day as an implicit block (or discard if it's noise)
+            val preamble = sanitizedText.substring(0, dayMatches[0].range.first).trim()
+            if (preamble.isNotBlank()) blocks.add(0, preamble)
         }
 
         for (block in blocks) {
