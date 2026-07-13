@@ -1,4 +1,4 @@
-package com.mihai.android17helloworld
+package com.mihai.dailyhabit
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme

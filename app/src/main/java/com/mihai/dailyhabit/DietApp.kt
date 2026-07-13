@@ -1,4 +1,4 @@
-package com.mihai.android17helloworld
+package com.mihai.dailyhabit
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult

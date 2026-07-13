@@ -1,4 +1,4 @@
-package com.mihai.android17helloworld
+package com.mihai.dailyhabit
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -22,7 +22,7 @@ sealed interface DietUiState {
 class DietViewModel @Inject constructor(
     private val documents: DocumentReader,
     private val textRecognition: TextRecognitionEngine,
-    private val parser: AiDietParser,
+    private val parser: DietInferenceEngine,
     private val repository: DietPlanRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow<DietUiState>(DietUiState.Idle)

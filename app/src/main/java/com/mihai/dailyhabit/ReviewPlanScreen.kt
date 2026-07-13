@@ -1,4 +1,4 @@
-package com.mihai.android17helloworld
+package com.mihai.dailyhabit
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image

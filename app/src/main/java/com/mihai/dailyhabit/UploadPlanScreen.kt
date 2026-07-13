@@ -1,4 +1,4 @@
-package com.mihai.android17helloworld
+package com.mihai.dailyhabit
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

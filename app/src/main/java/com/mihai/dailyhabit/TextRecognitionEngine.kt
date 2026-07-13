@@ -1,4 +1,4 @@
-package com.mihai.android17helloworld
+package com.mihai.dailyhabit
 
 import android.graphics.Bitmap
 import com.google.android.gms.tasks.Tasks

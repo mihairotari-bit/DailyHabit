@@ -7,13 +7,13 @@ plugins {
 }
 
 android {
-    namespace = "com.mihai.android17helloworld"
+    namespace = "com.mihai.dailyhabit"
     compileSdk = 37
     // API 37.1 is installed, but AGP 9.4.0-alpha03 maps extension=1 to the
     // unavailable SDK target android-37.0-ext1. See RESEARCH.md for the build proof.
 
     defaultConfig {
-        applicationId = "com.mihai.android17helloworld"
+        applicationId = "com.mihai.dailyhabit"
         minSdk = 35
         targetSdk = 37
         versionCode = 1
@@ -43,6 +43,8 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.google.ai.edge.aicore)
+    implementation(libs.google.ai.edge.litertlm)
+    implementation(libs.pdfbox.android)
+    implementation(libs.work.runtime.ktx)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

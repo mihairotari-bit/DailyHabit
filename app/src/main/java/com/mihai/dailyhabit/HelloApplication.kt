@@ -1,4 +1,4 @@
-package com.mihai.android17helloworld
+package com.mihai.dailyhabit
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp

@@ -1,4 +1,4 @@
-package com.mihai.android17helloworld
+package com.mihai.dailyhabit
 
 import javax.inject.Inject
 import javax.inject.Singleton
