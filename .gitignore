@@ -1,0 +1,22 @@
+# Android/Gradle ignored files
+*.iml
+.gradle
+.kotlin
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Application specific build folders
+/app/build
+/outputs
+/work
+/aicore-*.aar
+/classes.jar
+/window_dump.xml
+/logcat.txt
+/*.pdf
