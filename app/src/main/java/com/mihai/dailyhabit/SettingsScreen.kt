@@ -3,7 +3,6 @@ package com.mihai.dailyhabit
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
@@ -14,30 +13,13 @@ fun SettingsScreen(
     onThemeModeChanged: (ThemeMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Text("Tema dell'applicazione", style = MaterialTheme.typography.titleLarge)
+    Column(modifier = modifier.fillMaxSize().padding(16.dp).padding(top = 72.dp)) {
+        Text("Impostazioni", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Text("Preferenze", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         Spacer(modifier = Modifier.height(16.dp))
         
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RadioButton(
-                selected = themeMode == ThemeMode.SYSTEM,
-                onClick = { onThemeModeChanged(ThemeMode.SYSTEM) }
-            )
-            Text("Predefinito di sistema", modifier = Modifier.padding(start = 8.dp))
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RadioButton(
-                selected = themeMode == ThemeMode.LIGHT,
-                onClick = { onThemeModeChanged(ThemeMode.LIGHT) }
-            )
-            Text("Chiaro", modifier = Modifier.padding(start = 8.dp))
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RadioButton(
-                selected = themeMode == ThemeMode.DARK,
-                onClick = { onThemeModeChanged(ThemeMode.DARK) }
-            )
-            Text("Scuro", modifier = Modifier.padding(start = 8.dp))
-        }
+        Text("Nessuna impostazione aggiuntiva disponibile.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

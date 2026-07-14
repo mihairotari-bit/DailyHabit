@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -22,12 +23,14 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.foundation.isSystemInDarkTheme
 import kotlinx.coroutines.launch
 
 @Composable
@@ -81,39 +84,46 @@ fun DrawerNavigationItem(
 
 @Composable
 fun AnimatedThemeSwitch(
-    themeMode: ThemeMode,
-    onToggleTheme: (ThemeMode) -> Unit,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = themeMode == ThemeMode.DARK
-    val thumbOffset by animateDpAsState(if (isDark) 48.dp else 0.dp, label = "theme_switch_offset")
-
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .width(96.dp)
             .height(48.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(role = Role.Switch) {
-                onToggleTheme(if (isDark) ThemeMode.LIGHT else ThemeMode.DARK)
+            .toggleable(
+                value = checked,
+                role = Role.Switch,
+                onValueChange = onCheckedChange
+            )
+            .semantics { 
+                contentDescription = "Selettore tema" 
+                stateDescription = if (checked) "Tema scuro" else "Tema chiaro"
             }
-            .semantics { contentDescription = "Selettore tema" }
             .testTag("drawer_theme_switch"),
         contentAlignment = Alignment.CenterStart
     ) {
+        val trackPadding = 4.dp
+        val thumbSize = 40.dp
+        val travelDistance = maxWidth - thumbSize - (trackPadding * 2)
+
+        val realThumbOffset by animateDpAsState(if (checked) travelDistance + trackPadding else trackPadding, label = "theme_switch_offset")
+
         Row(
             modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Rounded.LightMode, contentDescription = null, tint = if (!isDark) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
-            Icon(Icons.Rounded.DarkMode, contentDescription = null, tint = if (isDark) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Rounded.LightMode, contentDescription = null, tint = if (!checked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Rounded.DarkMode, contentDescription = null, tint = if (checked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Box(
             modifier = Modifier
-                .padding(4.dp)
-                .size(40.dp)
-                .offset(x = thumbOffset)
+                .offset(x = realThumbOffset)
+                .size(thumbSize)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary)
         )
@@ -125,12 +135,56 @@ fun BotanicalDecoration(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val path = Path().apply {
             moveTo(0f, size.height)
-            quadraticBezierTo(size.width * 0.25f, size.height * 0.5f, size.width * 0.5f, size.height * 0.8f)
-            quadraticBezierTo(size.width * 0.75f, size.height * 1.1f, size.width, size.height * 0.6f)
+            quadraticTo(size.width * 0.25f, size.height * 0.5f, size.width * 0.5f, size.height * 0.8f)
+            quadraticTo(size.width * 0.75f, size.height * 1.1f, size.width, size.height * 0.6f)
             lineTo(size.width, size.height)
             close()
         }
         drawPath(path, color = Color(0xFFE6F4EA).copy(alpha = 0.6f))
+    }
+}
+
+@Composable
+fun GlobalControlsBar(
+    showNewPlan: Boolean,
+    onOpenDrawer: () -> Unit,
+    onNewPlan: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        FloatingActionButton(
+            onClick = onOpenDrawer,
+            modifier = Modifier
+                .size(56.dp)
+                .testTag("global_hamburger"),
+            shape = CircleShape,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp)
+        ) {
+            Icon(Icons.Rounded.Menu, contentDescription = "Apri menu")
+        }
+
+        if (showNewPlan) {
+            FloatingActionButton(
+                onClick = onNewPlan,
+                modifier = Modifier
+                    .size(56.dp)
+                    .testTag("global_new_plan"),
+                shape = CircleShape,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp)
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = "Nuovo piano")
+            }
+        }
     }
 }
 
@@ -156,6 +210,13 @@ fun DailyHabitAppScaffold(
 
     val config = LocalConfiguration.current
     val drawerWidth = (config.screenWidthDp * 0.85f).coerceAtMost(360f).dp
+
+    val systemDark = isSystemInDarkTheme()
+    val effectiveDark = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> systemDark
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -187,6 +248,7 @@ fun DailyHabitAppScaffold(
                                         if (currentRoute != AppDestination.SavedArea.route) {
                                             navController.navigate(AppDestination.SavedArea.route) { launchSingleTop = true; restoreState = true }
                                         }
+                                        SavedAreaNavigator.navigateToDaySelection()
                                     } else {
                                         if (currentRoute != AppDestination.DataFlow.route) {
                                             navController.navigate(AppDestination.DataFlow.route) { launchSingleTop = true; restoreState = true }
@@ -212,11 +274,14 @@ fun DailyHabitAppScaffold(
                             DrawerNavigationItem(
                                 label = if (hasPlan) "Diario" else "Diario (Nessun piano)",
                                 icon = Icons.Rounded.History,
-                                selected = false, // Will be handled better when SavedArea exposes current sub-route
+                                selected = false, 
                                 onClick = {
                                     if (hasPlan) {
                                         scope.launch { drawerState.close() }
-                                        // TODO: Pass intent to nested NavHost via a shared flow or just rely on the bottom bar navigation
+                                        if (currentRoute != AppDestination.SavedArea.route) {
+                                            navController.navigate(AppDestination.SavedArea.route) { launchSingleTop = true; restoreState = true }
+                                        }
+                                        SavedAreaNavigator.navigateToJournal()
                                     }
                                 },
                                 modifier = Modifier.testTag("drawer_journal").let { if (!hasPlan) it.background(Color.Transparent) else it }
@@ -265,14 +330,28 @@ fun DailyHabitAppScaffold(
                         }
                         
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            AnimatedThemeSwitch(themeMode, onToggleTheme)
+                            AnimatedThemeSwitch(
+                                checked = effectiveDark,
+                                onCheckedChange = { isDark ->
+                                    onToggleTheme(if (isDark) ThemeMode.DARK else ThemeMode.LIGHT)
+                                }
+                            )
                         }
                     }
                 }
             }
         }
     ) {
-        Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            contentWindowInsets = WindowInsets.safeDrawing,
+            topBar = {
+                GlobalControlsBar(
+                    showNewPlan = currentRoute == AppDestination.SavedArea.route && hasPlan,
+                    onOpenDrawer = { scope.launch { drawerState.open() } },
+                    onNewPlan = { showNewPlanDialog = true }
+                )
+            }
+        ) { innerPadding ->
             
             LaunchedEffect(hasPlan) {
                 if (hasPlan && currentRoute == AppDestination.DataFlow.route) {
@@ -291,7 +370,9 @@ fun DailyHabitAppScaffold(
             NavHost(
                 navController = navController,
                 startDestination = if (hasPlan) AppDestination.SavedArea.route else AppDestination.DataFlow.route,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
             ) {
                 composable(AppDestination.DataFlow.route) {
                     DietAppDataFlow(dietViewModel, modifier = Modifier.fillMaxSize())
@@ -307,39 +388,6 @@ fun DailyHabitAppScaffold(
                 }
                 composable(AppDestination.About.route) {
                     AboutScreen()
-                }
-            }
-            
-            // Global Hamburger
-            FloatingActionButton(
-                onClick = { scope.launch { drawerState.open() } },
-                modifier = Modifier
-                    .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp, start = 16.dp)
-                    .size(56.dp)
-                    .testTag("global_hamburger"),
-                shape = CircleShape,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
-            ) {
-                Icon(Icons.Rounded.Menu, contentDescription = "Apri menu")
-            }
-            
-            // Global Plus Button (only in SavedArea)
-            if (currentRoute == AppDestination.SavedArea.route && hasPlan) {
-                FloatingActionButton(
-                    onClick = { showNewPlanDialog = true },
-                    modifier = Modifier
-                        .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp, end = 16.dp)
-                        .align(Alignment.TopEnd)
-                        .size(56.dp)
-                        .testTag("global_new_plan"),
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Nuovo piano")
                 }
             }
         }

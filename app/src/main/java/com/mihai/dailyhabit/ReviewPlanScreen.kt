@@ -72,7 +72,7 @@ fun ReviewPlanScreen(plan: DietPlan, onBack: () -> Unit, onConfirm: () -> Unit, 
 }
 
 @Composable private fun ReviewHero(count: Int) {
-    Row(Modifier.fillMaxWidth().padding(start = 28.dp, end = 20.dp, bottom = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(start = 28.dp, top = 16.dp, end = 20.dp, bottom = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(56.dp)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.AssignmentTurnedIn, null, tint = MaterialTheme.colorScheme.onPrimaryContainer) } }
         Column(Modifier.padding(start = 14.dp).weight(1f)) {
             Text("Revisione piano", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)

@@ -74,7 +74,7 @@ fun UploadPlanScreen(modifier: Modifier = Modifier, onSelectFile: () -> Unit, da
 @Composable
 private fun UploadHeader() {
     Row(
-        Modifier.fillMaxWidth().padding(start = 24.dp, top = 36.dp, end = 20.dp, bottom = 28.dp),
+        Modifier.fillMaxWidth().padding(start = 24.dp, top = 16.dp, end = 20.dp, bottom = 28.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

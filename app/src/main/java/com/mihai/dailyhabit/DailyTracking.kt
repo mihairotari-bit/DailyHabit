@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
@@ -105,12 +106,40 @@ fun SavedAreaScreen(
     val plan by trackingViewModel.plan.collectAsState()
     LaunchedEffect(Unit) { trackingViewModel.loadLatestPlan() }
 
+    LaunchedEffect(Unit) {
+        SavedAreaNavigator.commands.collect { command ->
+            when (command) {
+                SavedAreaCommand.GoToDaySelection -> {
+                    trackingViewModel.selectMeal(null)
+                    trackingViewModel.setTrained(null)
+                    nestedNavController.navigate(SavedDestination.DaySelection.route) {
+                        popUpTo(SavedDestination.DaySelection.route) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                        restoreState = false
+                    }
+                }
+                SavedAreaCommand.GoToJournal -> {
+                    nestedNavController.navigate(SavedDestination.Journal.route) {
+                        popUpTo(SavedDestination.DaySelection.route) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            }
+        }
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar(
                 modifier = Modifier
                     .testTag("saved_bottom_navigation")
-                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .navigationBarsPadding(),
                 containerColor = MaterialTheme.colorScheme.surfaceContainer
             ) {
                 val isHomeSelected = currentRoute == SavedDestination.DaySelection.route || 
@@ -125,11 +154,11 @@ fun SavedAreaScreen(
                         trackingViewModel.selectMeal(null)
                         trackingViewModel.setTrained(null)
                         nestedNavController.navigate(SavedDestination.DaySelection.route) {
-                            popUpTo(nestedNavController.graph.findStartDestination().id) {
-                                saveState = true
+                            popUpTo(SavedDestination.DaySelection.route) {
+                                inclusive = false
                             }
                             launchSingleTop = true
-                            restoreState = true
+                            restoreState = false
                         }
                     },
                     modifier = Modifier.testTag("bottom_home"),
@@ -146,8 +175,8 @@ fun SavedAreaScreen(
                     selected = currentRoute == SavedDestination.Journal.route,
                     onClick = {
                         nestedNavController.navigate(SavedDestination.Journal.route) {
-                            popUpTo(nestedNavController.graph.findStartDestination().id) {
-                                saveState = true
+                            popUpTo(SavedDestination.DaySelection.route) {
+                                inclusive = false
                             }
                             launchSingleTop = true
                             restoreState = true
@@ -221,48 +250,61 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
     Column(
         Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .padding(top = 72.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Buongiorno 👋", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onSurface)
-        Spacer(Modifier.height(8.dp))
-        Text("Seleziona il tuo profilo di oggi.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        
-        Spacer(Modifier.height(48.dp))
-        
-        ElevatedCard(
-            onClick = onTrainingSelected,
-            modifier = Modifier.fillMaxWidth().height(100.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-        ) {
-            Row(Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.FitnessCenter, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                }
-                Spacer(Modifier.width(16.dp))
-                Text("Giorno con allenamento", style = MaterialTheme.typography.titleLarge)
-            }
-        }
-        
         Spacer(Modifier.height(16.dp))
-        
-        ElevatedCard(
-            onClick = onRestSelected,
-            modifier = Modifier.fillMaxWidth().height(100.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-        ) {
-            Row(Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Chair, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                }
-                Spacer(Modifier.width(16.dp))
-                Text("Giorno senza allenamento", style = MaterialTheme.typography.titleLarge)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Buongiorno 👋", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(Modifier.height(8.dp))
+                Text("Pronto a prenderti cura di te oggi?", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Box(Modifier.size(80.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.Eco, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
             }
         }
+        
+        Spacer(Modifier.height(32.dp))
+        
+        Card(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            shape = RoundedCornerShape(32.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        ) {
+            Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Box(Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.EnergySavingsLeaf, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
+                }
+                Spacer(Modifier.height(24.dp))
+                Text("Ti sei allenato oggi?", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(12.dp))
+                Text("La tua risposta ci aiuterà a mostrarti il piano nutrizionale più adatto a questa giornata.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                
+                Spacer(Modifier.height(48.dp))
+                
+                Button(
+                    onClick = onTrainingSelected,
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Sì, mi sono allenato", style = MaterialTheme.typography.titleMedium)
+                }
+                
+                Spacer(Modifier.height(16.dp))
+                
+                OutlinedButton(
+                    onClick = onRestSelected,
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("No, giorno di riposo", style = MaterialTheme.typography.titleMedium)
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -276,14 +318,13 @@ fun MealSelectionScreen(trackingViewModel: DailyTrackingViewModel, plan: DietPla
     Column(
         Modifier.fillMaxSize().padding(horizontal = 16.dp)
     ) {
-        Spacer(Modifier.height(72.dp))
+        Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Column(Modifier.weight(1f)) {
                 Text("Che pasto\nstai facendo?", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text("Seleziona il pasto che vuoi registrare.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            // A simple placeholder for illustration
             Box(Modifier.size(80.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
             }
@@ -341,7 +382,7 @@ fun MealDetailScreen(trackingViewModel: DailyTrackingViewModel, plan: DietPlan, 
     val options = trackingViewModel.profileResolver.resolve(plan, reqType)?.meals?.find { it.type == selectedMeal }?.options ?: emptyList()
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Spacer(Modifier.height(72.dp))
+        Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
                 Icon(Icons.Rounded.ArrowBack, contentDescription = "Indietro")
