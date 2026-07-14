@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DietTextPreprocessorTest {
-    private val preprocessor = DietTextPreprocessor()
+    private val preprocessor = DietTextPreprocessor(DietLineClassifier())
 
     @Test
     fun `strips emails and urls`() {

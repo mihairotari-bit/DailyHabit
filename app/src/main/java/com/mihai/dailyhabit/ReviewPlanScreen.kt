@@ -107,7 +107,17 @@ fun ReviewPlanScreen(plan: DietPlan, onBack: () -> Unit, onConfirm: () -> Unit, 
                     }
                     option.groups.forEachIndexed { groupIndex, group ->
                         if (option.groups.size > 1 || meal.options.size == 1) {
-                            Text("Alternativa ${groupIndex + 1}", Modifier.padding(top = 12.dp, bottom = 6.dp).clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.secondaryContainer).padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onSecondaryContainer, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            Text(
+                                "Alternativa ${groupIndex + 1}", 
+                                Modifier
+                                    .padding(top = 16.dp, bottom = 8.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
+                                    .padding(horizontal = 14.dp, vertical = 8.dp), 
+                                color = MaterialTheme.colorScheme.onSecondaryContainer, 
+                                fontSize = 13.sp, 
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                         group.alternatives.forEachIndexed { foodIndex, food ->
                             ReviewFoodRow(food, onNameChanged = { onFoodChange(dayIndex, mealIndex, food.clientId, food.copy(name = it)) }, onQuantityChanged = { onFoodChange(dayIndex, mealIndex, food.clientId, food.copy(quantity = it)) })

@@ -8,8 +8,8 @@ import org.junit.Assert.*
 class DietParserTest {
     @Test
     fun testParse() {
-        val preprocessor = DietTextPreprocessor()
-        val parser = DietParser(preprocessor)
+        val preprocessor = DietTextPreprocessor(DietLineClassifier())
+        val parser = DietParser(preprocessor, DietLineClassifier())
         val text = """
 GIORNO CON ALLENAMENTO
 PREWOUT

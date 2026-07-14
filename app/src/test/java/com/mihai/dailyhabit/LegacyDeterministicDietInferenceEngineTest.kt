@@ -7,8 +7,8 @@ import org.junit.Test
 
 class LegacyDeterministicDietInferenceEngineTest {
 
-    private val preprocessor = DietTextPreprocessor()
-    private val parser = DietParser(preprocessor)
+    private val preprocessor = DietTextPreprocessor(DietLineClassifier())
+    private val parser = DietParser(preprocessor, DietLineClassifier())
     private val engine = LegacyDeterministicDietInferenceEngine(parser)
 
     @Test

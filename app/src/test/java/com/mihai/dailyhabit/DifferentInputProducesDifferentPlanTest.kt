@@ -5,8 +5,8 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class DifferentInputProducesDifferentPlanTest {
-    private val preprocessor = DietTextPreprocessor()
-    private val parser = DietParser(preprocessor)
+    private val preprocessor = DietTextPreprocessor(DietLineClassifier())
+    private val parser = DietParser(preprocessor, DietLineClassifier())
     private val engine = LegacyDeterministicDietInferenceEngine(parser)
 
     @Test

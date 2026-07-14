@@ -8,8 +8,8 @@ import org.junit.Test
 import java.io.File
 
 class RotariSanitizedGoldenTest {
-    private val preprocessor = DietTextPreprocessor()
-    private val parser = DietParser(preprocessor)
+    private val preprocessor = DietTextPreprocessor(DietLineClassifier())
+    private val parser = DietParser(preprocessor, DietLineClassifier())
     private val engine = LegacyDeterministicDietInferenceEngine(parser)
 
     @Test

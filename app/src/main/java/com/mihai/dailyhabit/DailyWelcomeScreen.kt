@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,51 +52,43 @@ fun DailyWelcomeScreen(themeMode: ThemeMode, onWorkout: () -> Unit, onRest: () -
                 DropdownMenu(
                     expanded = menuExpanded, 
                     onDismissRequest = { menuExpanded = false },
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer).padding(8.dp),
-                    shape = RoundedCornerShape(16.dp)
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surface)
+                        .width(220.dp),
+                    shape = RoundedCornerShape(24.dp)
                 ) {
-                    androidx.compose.material3.DropdownMenuItem(
+                    DropdownMenuItem(
                         text = {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.Center
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
-                                    val isDark = themeMode == ThemeMode.DARK || (themeMode == ThemeMode.SYSTEM && systemDark)
-                                    Text(
-                                        if (!isDark) "☀️" else "⚪", style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    androidx.compose.material3.Switch(
-                                        checked = isDark,
-                                        onCheckedChange = { onToggleTheme(if (it) ThemeMode.DARK else ThemeMode.LIGHT) },
-                                        modifier = Modifier.padding(horizontal = 4.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        if (isDark) "🌙" else "⚫", style = MaterialTheme.typography.bodyLarge
-                                    )
-                                }
+                                val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+                                val isDark = themeMode == ThemeMode.DARK || (themeMode == ThemeMode.SYSTEM && systemDark)
+                                
+                                Text("☀️", fontSize = 18.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                androidx.compose.material3.Switch(
+                                    checked = isDark,
+                                    onCheckedChange = { onToggleTheme(if (it) ThemeMode.DARK else ThemeMode.LIGHT) }
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text("🌙", fontSize = 18.sp)
                             }
                         },
-                        onClick = {
-                            val isDark = themeMode == ThemeMode.DARK || (themeMode == ThemeMode.SYSTEM && false /* can't call composable here, but we pass explicit mode anyway */)
-                            // We should really just toggle based on current state, which we know from the UI
-                            // But actually, onToggleTheme will just set the mode directly.
-                            // The easiest way is to pass the opposite of the current visual state.
-                            // However, we don't need this onClick since the Switch handles it, or we can just leave it empty.
-                        }
+                        onClick = { }
                     )
-                    androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.surfaceVariant)
+                    androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.surfaceVariant)
                     DropdownMenuItem(
                         text = { Text("Impostazioni", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface) }, 
-                        onClick = { menuExpanded = false }
+                        onClick = { menuExpanded = false },
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                     )
                     DropdownMenuItem(
                         text = { Text("Informazioni", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface) }, 
-                        onClick = { menuExpanded = false }
+                        onClick = { menuExpanded = false },
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                     )
                 }
             }

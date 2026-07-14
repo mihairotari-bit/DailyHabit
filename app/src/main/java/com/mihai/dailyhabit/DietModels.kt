@@ -17,6 +17,16 @@ enum class ParserEngine { LEGACY_DETERMINISTIC, LITERT_GEMMA4_E2B, FAKE_TEST }
 enum class DayProfileType { TRAINING, REST, WEEKDAY, CUSTOM, UNKNOWN }
 
 @Serializable
+data class ParseReport(
+    val totalLines: Int,
+    val discardedLines: Int,
+    val foodsExtracted: Int,
+    val unknownLines: Int,
+    val daysFound: Int,
+    val mealsFound: Int
+)
+
+@Serializable
 data class DietPlan(
     val title: String = "Piano alimentare",
     val type: PlanType = PlanType.UNKNOWN,
@@ -26,7 +36,8 @@ data class DietPlan(
     val extractionMethod: String = "Unknown",
     val isTestData: Boolean = false,
     val sourceFileName: String? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val parseReport: ParseReport? = null
 )
 
 @Serializable

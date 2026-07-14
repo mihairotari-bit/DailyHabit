@@ -6,12 +6,18 @@ import javax.inject.Singleton
 
 @Singleton
 class DietParser @Inject constructor(
-    private val preprocessor: DietTextPreprocessor
+    private val preprocessor: DietTextPreprocessor,
+    private val classifier: DietLineClassifier
 ) {
     fun parse(ocrText: String): DietPlan {
         val sanitizedText = preprocessor.preprocess(ocrText)
         val type = detectPlanType(sanitizedText)
         val plans = linkedMapOf<String, LinkedHashMap<MealType, MealDraft>>()
+        
+        var totalLines = 0
+        var discardedLines = 0
+        var foodsExtracted = 0
+        var unknownLines = 0
         
         // Find boundaries for days
         val dayMatches = Regex("(?i).*\\bgiorno\\s+(con|senza)\\s+allenamento\\b.*").findAll(sanitizedText).toList()
@@ -60,44 +66,77 @@ class DietParser @Inject constructor(
             fun startGroup() { flushGroup(); currentGroup = mutableListOf() }
 
             val lines = chunkOcrLines(block)
+            totalLines += lines.size
+            
             lines.forEachIndexed { index, line ->
+                val kind = classifier.classify(line)
+                
+                if (kind == ParsedLineKind.UNKNOWN_NOISE) unknownLines++
+                
                 dayFor("$line ${lines.getOrNull(index + 1).orEmpty()}")?.let { day ->
                     flushGroup(); currentOption = null; currentDay = day; currentMeal = null; dinnerUsesLunch = false; return@forEachIndexed
                 }
                 
-                if (currentDay == null) currentDay = "Giorno con allenamento"
+                if (currentDay == null) {
+                    discardedLines++
+                    return@forEachIndexed // Wait for context
+                }
 
                 mealFor(line)?.let { meal ->
                     flushGroup(); currentOption = null; currentMeal = meal; dinnerUsesLunch = false; return@forEachIndexed
+                }
+                
+                if (currentMeal == null) {
+                    discardedLines++
+                    return@forEachIndexed // Wait for meal context
                 }
 
                 if (OPTION_MARKER.containsMatchIn(line)) { startOption(); return@forEachIndexed }
                 if (line == "+") { startGroup(); return@forEachIndexed }
                 if (LUNCH_REFERENCE.containsMatchIn(line)) {
-                    if (currentMeal == MealType.DINNER || currentMeal == MealType.LUNCH /* Rest day lunch might point to training day lunch */) {
+                    if (currentMeal == MealType.DINNER || currentMeal == MealType.LUNCH) {
                         dinnerUsesLunch = true
                         mealDraft()?.hasLunchAlternatives = true
                     }
                     return@forEachIndexed
                 }
                 
-                parseFood(line)?.let { food ->
-                    if (currentGroup == null) currentGroup = mutableListOf()
-                    currentGroup?.add(food)
+                if (kind == ParsedLineKind.FOOD_CANDIDATE) {
+                    parseFood(line)?.let { food ->
+                        foodsExtracted++
+                        if (currentGroup == null) currentGroup = mutableListOf()
+                        currentGroup?.add(food)
+                    } ?: discardedLines++
+                } else {
+                    discardedLines++
                 }
+                
                 if (dinnerUsesLunch) mealDraft()?.hasLunchAlternatives = true
             }
             flushGroup()
         }
 
-        return DietPlan(type = type, days = plans.map { (label, meals) ->
-            val profile = when {
-                label.contains("con allenamento", ignoreCase = true) -> DayProfileType.TRAINING
-                label.contains("senza allenamento", ignoreCase = true) -> DayProfileType.REST
-                else -> DayProfileType.UNKNOWN
+        val report = ParseReport(
+            totalLines = totalLines,
+            discardedLines = discardedLines,
+            foodsExtracted = foodsExtracted,
+            unknownLines = unknownLines,
+            daysFound = plans.size,
+            mealsFound = plans.values.sumOf { it.size }
+        )
+
+        return DietPlan(
+            type = type,
+            parseReport = report,
+            days = plans.map { (label, meals) ->
+                val profile = when {
+                    label.contains("con allenamento", ignoreCase = true) -> DayProfileType.TRAINING
+                    label.contains("senza allenamento", ignoreCase = true) -> DayProfileType.REST
+                    else -> DayProfileType.UNKNOWN
+                }
+                DailyMeals(label, STRICT_MEAL_ORDER.mapNotNull { t -> meals[t]?.toMeal(t) }, profileType = profile)
             }
-            DailyMeals(label, STRICT_MEAL_ORDER.mapNotNull { t -> meals[t]?.toMeal(t) }, profileType = profile)
-        })
+        )
     }
 
     private fun detectPlanType(text: String): PlanType {
