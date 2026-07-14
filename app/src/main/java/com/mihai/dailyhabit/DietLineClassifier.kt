@@ -67,7 +67,11 @@ class DietLineClassifier @Inject constructor() {
     }
 
     private fun isLunchReference(lower: String): Boolean {
-        return lower.contains("vedi alternative del pranzo") || lower.contains("alternative pranzo")
+        return lower.contains("vedi alternative del pranzo") || 
+               lower.contains("alternative pranzo") || 
+               lower.contains("come giorno con allenamento") || 
+               lower.contains("come da giorno") ||
+               lower.contains("come pranzo")
     }
 
     private fun isContactInfo(line: String): Boolean {

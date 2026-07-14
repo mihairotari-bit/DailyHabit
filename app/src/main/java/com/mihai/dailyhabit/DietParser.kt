@@ -1,6 +1,5 @@
 package com.mihai.dailyhabit
 
-import android.util.Log
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -83,7 +82,10 @@ class DietParser @Inject constructor(
                 }
 
                 mealFor(line)?.let { meal ->
-                    flushGroup(); currentOption = null; currentMeal = meal; dinnerUsesLunch = false; return@forEachIndexed
+                    flushGroup(); currentOption = null; currentMeal = meal; dinnerUsesLunch = false;
+                    // Eagerly create the meal draft so it's not lost even if empty
+                    currentDay?.let { d -> plans.getOrPut(d) { linkedMapOf() }.getOrPut(meal) { MealDraft() } }
+                    return@forEachIndexed
                 }
                 
                 if (currentMeal == null) {
@@ -91,9 +93,9 @@ class DietParser @Inject constructor(
                     return@forEachIndexed // Wait for meal context
                 }
 
-                if (OPTION_MARKER.containsMatchIn(line)) { startOption(); return@forEachIndexed }
-                if (line == "+") { startGroup(); return@forEachIndexed }
-                if (LUNCH_REFERENCE.containsMatchIn(line)) {
+                if (kind == ParsedLineKind.OPTION_MARKER || OPTION_MARKER.containsMatchIn(line)) { startOption(); return@forEachIndexed }
+                if (kind == ParsedLineKind.GROUP_MARKER || line == "+") { startGroup(); return@forEachIndexed }
+                if (kind == ParsedLineKind.LUNCH_REFERENCE) {
                     if (currentMeal == MealType.DINNER || currentMeal == MealType.LUNCH) {
                         dinnerUsesLunch = true
                         mealDraft()?.hasLunchAlternatives = true
@@ -163,7 +165,8 @@ class DietParser @Inject constructor(
         var pending = ""
         fun flush() { if (pending.isNotBlank()) { chunks += pending; pending = "" } }
         source.forEach { raw ->
-            val structural = dayFor(raw) != null || mealFor(raw) != null || OPTION_MARKER.containsMatchIn(raw) || raw == "+" || LUNCH_REFERENCE.containsMatchIn(raw)
+            val kind = classifier.classify(raw)
+            val structural = dayFor(raw) != null || mealFor(raw) != null || kind == ParsedLineKind.OPTION_MARKER || OPTION_MARKER.containsMatchIn(raw) || raw == "+" || kind == ParsedLineKind.LUNCH_REFERENCE
             if (structural) { flush(); chunks += raw; return@forEach }
             val candidate = listOf(pending, raw).filter(String::isNotBlank).joinToString(" ")
             if (parseFood(candidate) != null) { flush(); chunks += candidate } else pending = candidate
@@ -193,7 +196,7 @@ class DietParser @Inject constructor(
     
     private fun parseFood(input: String): FoodItem? {
         var line = input.replace(Regex("(?i)^oppure\\s*"), "").trim()
-        if (line.isBlank() || LUNCH_REFERENCE.containsMatchIn(line)) return null
+        if (line.isBlank() || classifier.classify(line) == ParsedLineKind.LUNCH_REFERENCE) return null
         if (line.lowercase().startsWith("note:")) return null
         
         var calories: Int? = null
@@ -253,7 +256,6 @@ class DietParser @Inject constructor(
         val DAY_WITH_WORKOUT = Regex("(?i).*\\bgiorno\\s+con\\s+allenamento\\b.*")
         val DAY_WITHOUT_WORKOUT = Regex("(?i).*\\bgiorno\\s+senza\\s+allenamento\\b.*")
         val OPTION_MARKER = Regex("(?i)\\bopzione\\s*\\d+\\b")
-        val LUNCH_REFERENCE = Regex("(?i)vedi\\s+(le\\s+)?alternative\\s+del\\s+pranzo")
         val QUANTITY_FIRST = Regex("(?i)^(?<quantity>\\d+(?:[,.]\\d+)?)\\s*(?<unit>g|gr|ml|pz|pezzi?)\\s+(?<name>.+)$")
         val QUANTITY_LAST = Regex("(?i)^(?<name>.+?)[\\s:–-]+(?<quantity>\\d+(?:[,.]\\d+)?)\\s*(?<unit>g|gr|ml|pz|pezzi?)$")
         val QUANTITY_FIRST_FIND = Regex("(?i)(?<quantity>\\d+(?:[,.]\\d+)?)\\s*(?<unit>g|gr|ml|pz|pezzi?)\\s+(?<name>[a-zA-Z].*)")
