@@ -1,27 +1,19 @@
-# Risultati Test Milestone 1.5 - Regressione Parser
+# Risultati Test Milestone 1.9
 
-## Copertura JUnit (`app/src/test/`)
+**Commit Validato:** `8fe7154`
+**Device di Validazione:** Pixel 9 reale, Android 17 / API 37.1
 
-| Test Class | Obiettivo | Esito |
-|------------|-----------|-------|
-| `ActiveDayProfileResolverTest` | Validare risoluzione semantica giorno/profilo, fallback a `UNKNOWN` o match label | PASS |
-| `DifferentInputProducesDifferentPlanTest` | Verificare che il parser deterministico non emetta risultati hardcoded o fake | PASS |
-| `EmptyTrackingStateTest` | Validare che lo stato ViewModel ritorni null (o gestisca l'assenza) per triggerare l'empty state UI | PASS |
-| `FakeEngineIsolationTest` | Verificare accessibilità limitata della classe `FakeDietInferenceEngine` ai test | PASS |
-| `LegacyDeterministicDietInferenceEngineTest` | Validare che il parser aggiunga metadati `LEGACY_DETERMINISTIC` corretti | PASS |
-| `RotariSanitizedGoldenTest` | Validare la presenza di tutti i pasti (pre, post, mattina, pranzo, cena) in un pdf tipo "Rotari" | PASS |
+## Messa a punto e Correzioni
 
-## Test di Integrazione (`app/src/androidTest/`)
+- `connectedDebugAndroidTest` e `testDebugUnitTest` hanno raggiunto esecuzione verde e completata con successo.
+- Verifica parser: L'analisi in blocchi distingue ora con successo i giorni di allenamento e i giorni di riposo, evitando "spill over" della lista Training nel Rest.
+- Corretto il bug `DAY_PROFILE_NOT_FOUND` in modo da non inserire "Piano Singolo" di fallback.
 
-| Test Class | Obiettivo | Esito |
-|------------|-----------|-------|
-| `ProductionEngineBindingTest` | Verificare che il Dagger/Hilt graph in `main` inietti solo il LegacyDeterministicDietInferenceEngine | PENDING (manca `hilt-android-testing`) |
+## Copertura Funzionale sul PDF reale
 
-## Validazione Funzionale (Pixel 9 Simulata/Local)
-
-- **Regressione Risolta**: Il parser deterministico riconosce ora i pasti `PRE_WORKOUT`, `POST_WORKOUT`, `MORNING_SNACK`.
-- **Parser Deterministico Ripristinato**: Nessun utilizzo in produzione del fallback "Lunedì / Latte / Fette biscottate" (`FakeDietInferenceEngine`).
-- **Supporto Regex Italiano**: Il match `\b(lunedì|martedì)\b` è stato corretto in `(?Ui)` per processare in modo corretto i word boundaries su lettere accentate come la 'ì' in Kotlin/Java.
-
-**Conclusioni:**
-La Regressione critica è risolta. L'applicazione ora usa il parser semantico e documentale in attesa del modello locale LiteRT-LM. La build è stabile e i test JUnit sono verdi (11/11 completati).
+- Rilevato Giorno con Allenamento: `SÌ`
+- Rilevato Giorno senza Allenamento: `SÌ`
+- Trovate opzioni per Pranzo Rest: `SÌ` (alimenti e grammature corretti)
+- Assenza Testo Raw nei Logs: `SÌ`
+- Temi Light / Dark coerenti e memorizzati: `SÌ`
+- Classificatore ripulito da informazioni utente reali: `SÌ`

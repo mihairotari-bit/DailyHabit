@@ -2,18 +2,22 @@
 
 ## [Unreleased]
 ### Added
-- Documentazione architetturale inziale (`PROJECT_STATUS.md`, `HANDOFF.md`, `TEST_RESULTS.md`, `PULL_REQUEST.md`).
-- Interfaccia `DietInferenceEngine` e `FakeDietInferenceEngine` per isolare il vecchio parsing da quello nuovo.
-- `pdfbox.android`, `work.runtime.ktx`, `litertlm` (version catalog aggiornato).
+- Pipeline di scansione nativa ibrida per PDF con OCR di fallback su base per pagina (`PdfNativeTextExtractor`).
+- Modello tipizzato a blocchi (`DietStructureTokenizer`) protetto dai riferimenti ambigui del pranzo / alternative.
+- Rigoroso `NativeTextQualityEvaluator` per definire il punteggio qualitativo del testo nativo con Enum motivazionali.
+- UI Review con corretta renderizzazione di tutti i pasti differenziati.
+- Numerosi test automatici per assicurare la robustezza architetturale.
 
 ### Changed
-- **ApplicationId**: Cambiato pacchetto da `com.mihai.android17helloworld` a `com.mihai.dailyhabit`. Tutte le classi, import, package statement e manifest sono stati rinominati.
-- **Dependency**: Sostituita la libreria sperimentale `aicore` con `litertlm-android:0.14.0`.
-- **UI**: Rimosso riferimento ad `AiDietParser` fallace.
+- Refactoring `DietParser` per iterare a "blocchi" invece di utilizzare espressioni regolari con lookbehind fragili.
+- Rimozione del finto profilo "Piano Singolo" come fallback quando le intestazioni corrette non ci sono. L'errore viene mostrato in modo consono nella UI.
+- Log testuali sanitizzati per aderire alla conformità della privacy.
 
-### Removed
-- `AiDietParser.kt` e il mock obsoleto precedentemente accoppiato ad `aicore`.
+### Fixed
+- Pranzo Rest isolato e scorporato con successo da "Pranzo Training".
 
-## [Baseline] - 2026-07-13
-- Tag: `baseline-aicore-parser` (Commit: 338fd4e)
-- Stato di partenza del progetto (Applicazione con package android17helloworld, uso di Gemini Nano sperimentale, parse tramite Regex rigide).
+## [v1.9] Milestone 1.9
+Validata su Pixel 9 reale:
+- Parsing strutturale isolato
+- Corretta migrazione da Regex Fragili a Blocchi
+- Test superati in locale ed in remoto

@@ -1,11 +1,11 @@
-# Limitazioni Attuali del Parser (Legacy Deterministic)
+# Limiti del Parser Deterministico (Legacy)
 
-L'attuale `DietParser` utilizza espressioni regolari e una state-machine esplicita (`DietLineClassifier`). Nonostante i miglioramenti della Milestone 1.9 che azzerano molti falsi positivi (email, recapiti, metadati), ci sono limiti strutturali.
+Attualmente il `DietParser` e `DietLineClassifier` supportano PDF nativi e falliscono verso l'OCR per le immagini. 
+Sebbene la logica a blocchi per giorni e pasti risolva moltissime ambiguità, rimangono i seguenti limiti architetturali per i quali servirà l'uso di un LLM locale (Milestone 2):
 
-## Limiti Strutturali
-1. **Mancanza di Comprensione Semantica**: Il parser non "legge" il testo, ma cerca corrispondenze esatte e landmark strutturali. Se un medico usa una formulazione non prevista (es. "Al mattino consumare:"), il blocco fallisce.
-2. **Grammatica Rigida (FoodItem)**: Riconosce solo `<Quantità> <Unità> <Nome>` o `<Nome> <Quantità> <Unità>`. Formati non convenzionali come "Un cucchiaio di olio" sfuggono senza una mappatura LLM.
-3. **Impossibilità di Relazione Complessa**: Le alternative composte (es. "Opzione 1: A e B, oppure Opzione 2: C") vengono a volte appiattite se il marker non è esplicito.
+1. **Variabilità Intestazioni**: Nutrizionisti diversi usano layout creativi e descrittivi impossibili da classificare in maniera esaustiva tramite Regular Expressions.
+2. **Grammature complesse o composizionali**: Alcuni alimenti sono descritti con frazioni ("1/2 mela") o misure arbitrarie ("un filo d'olio", "una tazza") che il determinismo fa fatica a quantificare per i macros in maniera nativa.
+3. **Reference Dinamici Complessi**: Testi come "mangia come al mattino ma togli 10g di carboidrati" non sono calcolabili facilmente in regex.
+4. **Resilienza all'OCR Misto**: Pur essendoci l'OCR, la pipeline a volte sbaglia O e 0 (lettera / numero).
 
-## Soluzione Prevista (Milestone 2)
-Il passaggio a **Gemma 4 (LiteRT-LM)** sostituirà la state machine con un prompt engineerizzato, delegando la comprensione del testo a un modello Edge capace di interpretare "semanticamente" le associazioni, pur restituendo uno schema JSON deterministico.
+La Milestone 2 punterà a superare questi colli di bottiglia introducendo l'elaborazione NLP on-device con Gemma 4 E2B.

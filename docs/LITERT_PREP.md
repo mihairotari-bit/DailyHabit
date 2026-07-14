@@ -1,14 +1,21 @@
-# LiteRT-LM Migration Preparation (Milestone 1.9)
+# Preparazione per LiteRT-LM (Milestone 2)
 
-Questo documento traccia i prerequisiti completati in vista della Milestone 2 (integrazione di Gemma 4 via LiteRT).
+La Milestone 2 vedrà l'introduzione di LiteRT e Gemma 4 E2B in esecuzione totalmente on-device per ovviare ai limiti del parser deterministico.
 
-## Stato Attuale
-1. **Parser Engine Isolation**: L'interfaccia `DietInferenceEngine` è il contratto esclusivo.
-2. **Parser Scaffolding**: È stato creato il placeholder `LiteRtDietInferenceEngine`.
-3. **Data Model**: `ParserEngine.LITERT_GEMMA4_E2B` è già definito e supportato dal database e serializzatore.
-4. **App Core**: La logica legacy usa `DietParser` e `LegacyDeterministicDietInferenceEngine`, ma è strutturalmente intercambiabile.
+## Moduli Architetturali da Sviluppare
 
-## Prossimi Passi (Milestone 2)
-1. **Model Download Manager**: Creare il servizio di download (Foreground Service) per Gemma 4 (circa 1.5GB/2GB per la versione 2B).
-2. **Task Inizializzazione**: Utilizzare le API Edge/LiteRT per caricare i pesi e creare la pipeline di prompt.
-3. **Prompt Engineering**: Progettare un prompt robusto a singola passata che estragga la medesima struttura canonica del DietPlan da un testo documentale OCR.
+1. **ModelDownloadManager**:
+    - Download riprendibile e progress bar.
+    - Verifica hash SHA-256 del binario.
+    - Gestione dello spazio di storage.
+2. **Inizializzazione Motore LiteRT-LM**:
+    - Allocazione pesi in memoria e offload dinamico (GPU first con CPU fallback).
+    - Lifecycle (non bloccare la UI, coroutines bound al ViewModel o ForegroundService per task lunghi).
+3. **Structured Output**:
+    - Estrazione JSON tipizzato dal prompt.
+    - Mapping diretto al data class `DietPlan`.
+4. **Fallback Deterministico Sicuro**:
+    - Se LiteRT va in OOM o genera eccezioni, richiamare il Legacy Parser per evitare bricking dell'uso base dell'app.
+5. **UI dedicata**:
+    - `ModelDownloadScreen` per mostrare i progressi di estrazione pesi.
+    - Indicatore del parser corrente utilizzato per l'inferenza.
