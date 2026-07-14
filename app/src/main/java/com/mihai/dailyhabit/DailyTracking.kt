@@ -9,6 +9,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,9 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -247,64 +254,148 @@ fun SavedAreaScreen(
 
 @Composable
 fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Unit) {
-    Column(
+    BoxWithConstraints(
         Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(MaterialTheme.colorScheme.background)
+            .testTag("day_selection_screen")
     ) {
-        Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Buongiorno 👋", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.onSurface)
-                Spacer(Modifier.height(8.dp))
-                Text("Pronto a prenderti cura di te oggi?", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Box(Modifier.size(80.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.Eco, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
-            }
-        }
+        val screenHeight = maxHeight
+        val isShortScreen = screenHeight < 650.dp
         
-        Spacer(Modifier.height(32.dp))
-        
-        Card(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            shape = RoundedCornerShape(32.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (isShortScreen) Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()) else Modifier),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Box(Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.EnergySavingsLeaf, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
+            Spacer(Modifier.height(if (isShortScreen) 24.dp else screenHeight * 0.12f))
+            
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .testTag("day_selection_hero"),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Buongiorno 👋", 
+                        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Medium), 
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Pronto a prenderti cura\ndi te oggi?", 
+                        style = MaterialTheme.typography.titleLarge, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 28.sp
+                    )
                 }
-                Spacer(Modifier.height(24.dp))
-                Text("Ti sei allenato oggi?", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(12.dp))
-                Text("La tua risposta ci aiuterà a mostrarti il piano nutrizionale più adatto a questa giornata.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                
-                Spacer(Modifier.height(48.dp))
-                
-                Button(
-                    onClick = onTrainingSelected,
-                    modifier = Modifier.fillMaxWidth().height(64.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                Image(
+                    painter = painterResource(R.drawable.app_icon),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .weight(0.85f)
+                        .heightIn(min = 170.dp, max = 220.dp)
+                        .testTag("day_selection_illustration"),
+                    contentScale = ContentScale.Fit
+                )
+            }
+            
+            Spacer(Modifier.height(if (isShortScreen) 24.dp else screenHeight * 0.05f))
+            
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .wrapContentHeight()
+                    .testTag("day_selection_question_card"),
+                shape = RoundedCornerShape(36.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 32.dp, start = 24.dp, end = 24.dp), 
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Sì, mi sono allenato", style = MaterialTheme.typography.titleMedium)
-                }
-                
-                Spacer(Modifier.height(16.dp))
-                
-                OutlinedButton(
-                    onClick = onRestSelected,
-                    modifier = Modifier.fillMaxWidth().height(64.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("No, giorno di riposo", style = MaterialTheme.typography.titleMedium)
+                    Box(Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.EnergySavingsLeaf, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                    }
+                    Spacer(Modifier.height(20.dp))
+                    Text(
+                        "Ti sei allenato oggi?", 
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold), 
+                        color = MaterialTheme.colorScheme.onSurface, 
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "La tua risposta ci aiuterà a mostrarti il piano nutrizionale più adatto a questa giornata.", 
+                        style = MaterialTheme.typography.bodyLarge, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                        textAlign = TextAlign.Center, 
+                        lineHeight = 24.sp
+                    )
+                    
+                    Spacer(Modifier.height(40.dp))
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(68.dp)
+                            .clip(RoundedCornerShape(34.dp))
+                            .background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)))
+                            .clickable(onClick = onTrainingSelected)
+                            .testTag("day_selection_training"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.FitnessCenter, contentDescription = null, tint = Color.White)
+                            Text(
+                                "Sì, mi sono allenato", 
+                                modifier = Modifier.weight(1f), 
+                                textAlign = TextAlign.Center, 
+                                color = Color.White, 
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                            Spacer(Modifier.size(24.dp)) 
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(16.dp))
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(68.dp)
+                            .clip(RoundedCornerShape(34.dp))
+                            .background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)))
+                            .clickable(onClick = onRestSelected)
+                            .testTag("day_selection_rest"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.Hotel, contentDescription = null, tint = Color.White)
+                            Text(
+                                "No, giorno di riposo", 
+                                modifier = Modifier.weight(1f), 
+                                textAlign = TextAlign.Center, 
+                                color = Color.White, 
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                            Spacer(Modifier.size(24.dp))
+                        }
+                    }
                 }
             }
+            
+            if (!isShortScreen) {
+                Spacer(Modifier.weight(1f))
+            } else {
+                Spacer(Modifier.height(32.dp))
+            }
         }
-        Spacer(Modifier.height(16.dp))
     }
 }
 
