@@ -6,7 +6,7 @@ import org.junit.Test
 
 class DifferentInputProducesDifferentPlanTest {
     private val preprocessor = DietTextPreprocessor(DietLineClassifier())
-    private val parser = DietParser(preprocessor, DietLineClassifier())
+    private val parser = DietParser(preprocessor, DietLineClassifier(), DietStructureTokenizer())
     private val engine = LegacyDeterministicDietInferenceEngine(parser)
 
     @Test
@@ -26,8 +26,8 @@ class DifferentInputProducesDifferentPlanTest {
             30 g whey
         """.trimIndent()
 
-        val plan1 = engine.parse(input1)
-        val plan2 = engine.parse(input2)
+        val plan1 = engine.parse(DietInferenceInput(input1))
+        val plan2 = engine.parse(DietInferenceInput(input2))
 
         assertNotEquals(plan1.days, plan2.days)
         assertNotEquals(plan1.type, plan2.type)

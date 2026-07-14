@@ -18,12 +18,23 @@ enum class DayProfileType { TRAINING, REST, WEEKDAY, CUSTOM, UNKNOWN }
 
 @Serializable
 data class ParseReport(
-    val totalLines: Int,
-    val discardedLines: Int,
-    val foodsExtracted: Int,
-    val unknownLines: Int,
-    val daysFound: Int,
-    val mealsFound: Int
+    val extractionMethod: String = "Unknown",
+    val nativeCharacterCount: Int = 0,
+    val totalLines: Int = 0,
+    val discardedLines: Int = 0,
+    val foodsExtracted: Int = 0,
+    val unknownLines: Int = 0,
+    val daysFound: Int = 0,
+    val mealsFound: Int = 0,
+    
+    // REST Lunch diagnostics
+    val restProfileDetected: Boolean = false,
+    val restLunchHeaderDetected: Boolean = false,
+    val restLunchOptionCount: Int = 0,
+    val restLunchGroupCount: Int = 0,
+    val restLunchFoodCount: Int = 0,
+    
+    val warnings: List<String> = emptyList()
 )
 
 @Serializable

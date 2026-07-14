@@ -3,7 +3,7 @@ package com.mihai.dailyhabit
 import javax.inject.Inject
 
 class FakeDietInferenceEngine @Inject constructor() : DietInferenceEngine {
-    override suspend fun parse(input: String): DietPlan {
+    override suspend fun parse(input: DietInferenceInput): DietPlan {
         return DietPlan(
             title = "Piano Fake",
             type = PlanType.WEEKLY,

@@ -36,7 +36,7 @@ class DietLineClassifier @Inject constructor() {
         if (isMealHeader(lower)) return ParsedLineKind.MEAL_HEADER
         if (isOptionMarker(lower)) return ParsedLineKind.OPTION_MARKER
         if (trimmed == "+") return ParsedLineKind.GROUP_MARKER
-        if (isLunchReference(lower)) return ParsedLineKind.LUNCH_REFERENCE
+        
 
         // 2. Noise & False Positives
         if (isContactInfo(trimmed)) return ParsedLineKind.CONTACT_INFO
@@ -47,6 +47,7 @@ class DietLineClassifier @Inject constructor() {
 
         // 3. Food Candidates
         if (isFoodCandidate(trimmed)) return ParsedLineKind.FOOD_CANDIDATE
+        if (isLunchReference(lower)) return ParsedLineKind.LUNCH_REFERENCE
 
         return ParsedLineKind.UNKNOWN_NOISE
     }
@@ -66,12 +67,9 @@ class DietLineClassifier @Inject constructor() {
         return lower.startsWith("opzione") || lower.startsWith("alternativa")
     }
 
-    private fun isLunchReference(lower: String): Boolean {
+    fun isLunchReference(lower: String): Boolean {
         return lower.contains("vedi alternative del pranzo") || 
-               lower.contains("alternative pranzo") || 
-               lower.contains("come giorno con allenamento") || 
-               lower.contains("come da giorno") ||
-               lower.contains("come pranzo")
+               lower.contains("alternative pranzo")
     }
 
     private fun isContactInfo(line: String): Boolean {

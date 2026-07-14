@@ -9,7 +9,7 @@ import java.io.File
 
 class RotariSanitizedGoldenTest {
     private val preprocessor = DietTextPreprocessor(DietLineClassifier())
-    private val parser = DietParser(preprocessor, DietLineClassifier())
+    private val parser = DietParser(preprocessor, DietLineClassifier(), DietStructureTokenizer())
     private val engine = LegacyDeterministicDietInferenceEngine(parser)
 
     @Test
@@ -17,7 +17,7 @@ class RotariSanitizedGoldenTest {
         // Read real fixture
         val fixtureText = File("src/test/resources/fixtures/rotari_real_sanitized_extracted_text.txt").readText()
 
-        val plan = engine.parse(fixtureText)
+        val plan = engine.parse(DietInferenceInput(fixtureText))
         println("DAYS FOUND: ${plan.days.size}")
         plan.days.forEach { day -> 
             println("DAY: ${day.day}, PROFILE: ${day.profileType}, MEALS: ${day.meals.size}")
@@ -26,7 +26,7 @@ class RotariSanitizedGoldenTest {
 
         // General assertions
         assertEquals(ParserEngine.LEGACY_DETERMINISTIC, plan.parserEngine)
-        assertEquals("ML Kit OCR + LegacyDeterministicParser", plan.extractionMethod)
+        assertEquals("Unknown", plan.extractionMethod)
         assertFalse(plan.isTestData)
         
         // Profiles verification

@@ -20,6 +20,7 @@ import org.xmlpull.v1.XmlPullParserFactory
 
 sealed interface DocumentContent {
     data class Text(val value: String) : DocumentContent
+    data class TextWithPages(val pages: List<ExtractedPage>) : DocumentContent
     data class Pdf(val pages: List<Bitmap>) : DocumentContent
 }
 
@@ -40,11 +41,20 @@ class DocumentRepository @Inject constructor(
         }
     }
 
+    @Inject lateinit var nativeExtractor: PdfNativeTextExtractor
+
     override suspend fun read(uri: Uri): DocumentContent = withContext(Dispatchers.IO) {
         when (documentKind(uri)) {
             DocumentKind.TEXT -> DocumentContent.Text(readText(uri))
             DocumentKind.DOCX -> DocumentContent.Text(readDocxParagraphs(uri))
-            DocumentKind.PDF -> DocumentContent.Pdf(renderPdf(uri))
+            DocumentKind.PDF -> {
+                val nativePages = nativeExtractor.extract(resolver, uri)
+                if (nativePages != null) {
+                    DocumentContent.TextWithPages(nativePages)
+                } else {
+                    DocumentContent.Pdf(renderPdf(uri))
+                }
+            }
             DocumentKind.UNKNOWN -> error("Formato non supportato. Scegli TXT, PDF o DOCX.")
         }
     }

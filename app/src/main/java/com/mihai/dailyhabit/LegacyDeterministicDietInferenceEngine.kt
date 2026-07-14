@@ -5,11 +5,10 @@ import javax.inject.Inject
 class LegacyDeterministicDietInferenceEngine @Inject constructor(
     private val parser: DietParser
 ) : DietInferenceEngine {
-    override suspend fun parse(input: String): DietPlan {
-        val plan = parser.parse(input)
-        return plan.copy(
+    override suspend fun parse(input: DietInferenceInput): DietPlan {
+        return parser.parse(input).copy(
             parserEngine = ParserEngine.LEGACY_DETERMINISTIC,
-            extractionMethod = "ML Kit OCR + LegacyDeterministicParser",
+            extractionMethod = input.extractionMethod,
             isTestData = false
         )
     }

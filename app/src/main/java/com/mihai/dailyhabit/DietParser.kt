@@ -6,125 +6,145 @@ import javax.inject.Singleton
 @Singleton
 class DietParser @Inject constructor(
     private val preprocessor: DietTextPreprocessor,
-    private val classifier: DietLineClassifier
+    private val classifier: DietLineClassifier,
+    private val tokenizer: DietStructureTokenizer
 ) {
-    fun parse(ocrText: String): DietPlan {
-        val sanitizedText = preprocessor.preprocess(ocrText)
-        val type = detectPlanType(sanitizedText)
-        val plans = linkedMapOf<String, LinkedHashMap<MealType, MealDraft>>()
+    fun parse(input: DietInferenceInput): DietPlan {
+        val rawTokens = tokenizer.tokenize(input.rawText)
+        val fullTextAfterTokenization = rawTokens.joinToString("\n")
+        val sanitizedText = preprocessor.preprocess(fullTextAfterTokenization)
+        val tokens = sanitizedText.split("\n").filter { it.isNotBlank() }
         
-        var totalLines = 0
+        var totalLines = tokens.size
         var discardedLines = 0
         var foodsExtracted = 0
         var unknownLines = 0
         
-        // Find boundaries for days
-        val dayMatches = Regex("(?i).*\\bgiorno\\s+(con|senza)\\s+allenamento\\b.*").findAll(sanitizedText).toList()
+        val type = detectPlanType(tokens.joinToString("\n"))
         
-        val blocks = mutableListOf<String>()
-        if (dayMatches.isEmpty()) {
-            blocks.add(sanitizedText)
-        } else {
-            for (i in dayMatches.indices) {
-                val start = dayMatches[i].range.first
-                val end = if (i + 1 < dayMatches.size) dayMatches[i + 1].range.first else sanitizedText.length
-                blocks.add(sanitizedText.substring(start, end))
+        // Find Day Profiles
+        val dayIndices = mutableListOf<Pair<String, Int>>()
+        for ((i, token) in tokens.withIndex()) {
+            val lower = token.lowercase()
+            if (DAY_WITH_WORKOUT.matches(lower)) dayIndices.add("Giorno con allenamento" to i)
+            else if (DAY_WITHOUT_WORKOUT.matches(lower)) dayIndices.add("Giorno senza allenamento" to i)
+            else {
+                val weekMatch = Regex("(?i)^(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)$").find(token)
+                if (weekMatch != null) dayIndices.add(weekMatch.groupValues[1].replaceFirstChar { it.uppercase() } to i)
             }
-            val preamble = sanitizedText.substring(0, dayMatches[0].range.first).trim()
-            if (preamble.isNotBlank()) blocks.add(0, preamble)
         }
-
-        for (block in blocks) {
-            var currentDay: String? = null
-            var currentMeal: MealType? = null
-            var currentOption: MutableList<MutableList<FoodItem>>? = null
-            var currentGroup: MutableList<FoodItem>? = null
-            var dinnerUsesLunch = false
-
-            fun mealDraft(): MealDraft? {
-                val day = currentDay ?: return null
-                val meal = currentMeal ?: return null
-                return plans.getOrPut(day) { linkedMapOf() }.getOrPut(meal) { MealDraft() }
-            }
-            fun flushGroup() {
-                val group = currentGroup
-                if (!group.isNullOrEmpty()) {
-                    if (currentOption == null) {
-                        currentOption = mutableListOf()
-                        mealDraft()?.options?.add(currentOption!!)
-                    }
-                    currentOption?.add(group.toMutableList())
-                }
-                currentGroup = null
-            }
-            fun startOption() {
-                flushGroup()
-                currentOption = mutableListOf()
-                mealDraft()?.options?.add(currentOption!!)
-            }
-            fun startGroup() { flushGroup(); currentGroup = mutableListOf() }
-
-            val lines = chunkOcrLines(block)
-            totalLines += lines.size
+        
+        if (dayIndices.isEmpty()) {
+            dayIndices.add("Piano Singolo" to 0) // Fallback if no day found
+        }
+        
+        println("TOKENS: $tokens"); println("DAY INDICES: $dayIndices"); val plans = linkedMapOf<String, LinkedHashMap<MealType, MealDraft>>()
+        
+        for (d in 0 until dayIndices.size) {
+            val (dayName, startIdx) = dayIndices[d]
+            val endIdx = if (d + 1 < dayIndices.size) dayIndices[d + 1].second else tokens.size
             
-            lines.forEachIndexed { index, line ->
-                val kind = classifier.classify(line)
-                
-                if (kind == ParsedLineKind.UNKNOWN_NOISE) unknownLines++
-                
-                dayFor("$line ${lines.getOrNull(index + 1).orEmpty()}")?.let { day ->
-                    flushGroup(); currentOption = null; currentDay = day; currentMeal = null; dinnerUsesLunch = false; return@forEachIndexed
+            val dayTokens = tokens.subList(startIdx, endIdx)
+            
+            // Find Meal Headers within this Day
+            val mealIndices = mutableListOf<Pair<MealType, Int>>()
+            for ((i, token) in dayTokens.withIndex()) {
+                val meal = mealFor(token)
+                if (meal != null) {
+                    mealIndices.add(meal to i)
                 }
-                
-                if (currentDay == null) {
-                    discardedLines++
-                    return@forEachIndexed // Wait for context
-                }
-
-                mealFor(line)?.let { meal ->
-                    flushGroup(); currentOption = null; currentMeal = meal; dinnerUsesLunch = false;
-                    // Eagerly create the meal draft so it's not lost even if empty
-                    currentDay?.let { d -> plans.getOrPut(d) { linkedMapOf() }.getOrPut(meal) { MealDraft() } }
-                    return@forEachIndexed
-                }
-                
-                if (currentMeal == null) {
-                    discardedLines++
-                    return@forEachIndexed // Wait for meal context
-                }
-
-                if (kind == ParsedLineKind.OPTION_MARKER || OPTION_MARKER.containsMatchIn(line)) { startOption(); return@forEachIndexed }
-                if (kind == ParsedLineKind.GROUP_MARKER || line == "+") { startGroup(); return@forEachIndexed }
-                if (kind == ParsedLineKind.LUNCH_REFERENCE) {
-                    if (currentMeal == MealType.DINNER || currentMeal == MealType.LUNCH) {
-                        dinnerUsesLunch = true
-                        mealDraft()?.hasLunchAlternatives = true
-                    }
-                    return@forEachIndexed
-                }
-                
-                if (kind == ParsedLineKind.FOOD_CANDIDATE) {
-                    parseFood(line)?.let { food ->
-                        foodsExtracted++
-                        if (currentGroup == null) currentGroup = mutableListOf()
-                        currentGroup?.add(food)
-                    } ?: discardedLines++
-                } else {
-                    discardedLines++
-                }
-                
-                if (dinnerUsesLunch) mealDraft()?.hasLunchAlternatives = true
             }
-            flushGroup()
+            
+            for (m in 0 until mealIndices.size) {
+                val (mealType, mStart) = mealIndices[m]
+                val mEnd = if (m + 1 < mealIndices.size) mealIndices[m + 1].second else dayTokens.size
+                
+                val mealTokens = dayTokens.subList(mStart + 1, mEnd) // Exclude the header itself
+                
+                val draft = plans.getOrPut(dayName) { linkedMapOf() }.getOrPut(mealType) { MealDraft() }
+                
+                var currentOption: MutableList<MutableList<FoodItem>>? = null
+                var currentGroup: MutableList<FoodItem>? = null
+                
+                fun flushGroup() {
+                    if (!currentGroup.isNullOrEmpty()) {
+                        if (currentOption == null) {
+                            currentOption = mutableListOf()
+                            draft.options.add(currentOption!!)
+                        }
+                        currentOption!!.add(currentGroup!!.toMutableList())
+                        currentGroup = null
+                    }
+                }
+                
+                fun startOption() {
+                    flushGroup()
+                    currentOption = mutableListOf()
+                    draft.options.add(currentOption!!)
+                }
+                
+                fun startGroup() {
+                    flushGroup()
+                    currentGroup = mutableListOf()
+                }
+                
+                for (token in mealTokens) {
+                    if (classifier.isLunchReference(token.lowercase())) {
+                        draft.hasLunchAlternatives = true; println("LUNCH REF FOUND IN TOKEN: \$token for Meal: \$currentMealType")
+                    }
+                    val kind = classifier.classify(token)
+                    if (kind == ParsedLineKind.UNKNOWN_NOISE) { unknownLines++; discardedLines++; continue }
+                    
+                    if (kind == ParsedLineKind.OPTION_MARKER || OPTION_MARKER.containsMatchIn(token)) {
+                        startOption()
+                        continue
+                    }
+                    if (kind == ParsedLineKind.GROUP_MARKER || token == "+") {
+                        startGroup()
+                        continue
+                    }
+                    if (kind == ParsedLineKind.LUNCH_REFERENCE) {
+                        continue // Already set hasLunchAlternatives
+                    }
+                    
+                    if (kind == ParsedLineKind.FOOD_CANDIDATE) {
+                        val food = parseFood(token)
+                        if (food != null) {
+                            foodsExtracted++
+                            if (currentGroup == null) currentGroup = mutableListOf()
+                            currentGroup!!.add(food)
+                        } else {
+                            discardedLines++
+                        }
+                    } else {
+                        discardedLines++
+                    }
+                }
+                flushGroup()
+            }
         }
+        
+        val restDay = plans.entries.find { it.key.contains("senza allenamento", ignoreCase = true) }?.value
+        val restLunch = restDay?.get(MealType.LUNCH)
+        val restLunchOptions = restLunch?.options?.size ?: 0
+        val restLunchGroups = restLunch?.options?.sumOf { it.size } ?: 0
+        val restLunchFoods = restLunch?.options?.sumOf { it.sumOf { g -> g.size } } ?: 0
 
         val report = ParseReport(
+            extractionMethod = input.extractionMethod,
+            nativeCharacterCount = input.pages.sumOf { it.text.length },
             totalLines = totalLines,
             discardedLines = discardedLines,
             foodsExtracted = foodsExtracted,
             unknownLines = unknownLines,
             daysFound = plans.size,
-            mealsFound = plans.values.sumOf { it.size }
+            mealsFound = plans.values.sumOf { it.size },
+            restProfileDetected = restDay != null,
+            restLunchHeaderDetected = restLunch != null,
+            restLunchOptionCount = restLunchOptions,
+            restLunchGroupCount = restLunchGroups,
+            restLunchFoodCount = restLunchFoods,
+            warnings = emptyList()
         )
 
         return DietPlan(
@@ -157,32 +177,6 @@ class DietParser @Inject constructor(
         }
     }
 
-    private fun normalize(input: String): String = input.replace(Regex("\\s+"), " ").trim()
-    
-    private fun chunkOcrLines(text: String): List<String> {
-        val source = text.lineSequence().map(::normalize).filter(String::isNotEmpty).toList()
-        val chunks = mutableListOf<String>()
-        var pending = ""
-        fun flush() { if (pending.isNotBlank()) { chunks += pending; pending = "" } }
-        source.forEach { raw ->
-            val kind = classifier.classify(raw)
-            val structural = dayFor(raw) != null || mealFor(raw) != null || kind == ParsedLineKind.OPTION_MARKER || OPTION_MARKER.containsMatchIn(raw) || raw == "+" || kind == ParsedLineKind.LUNCH_REFERENCE
-            if (structural) { flush(); chunks += raw; return@forEach }
-            val candidate = listOf(pending, raw).filter(String::isNotBlank).joinToString(" ")
-            if (parseFood(candidate) != null) { flush(); chunks += candidate } else pending = candidate
-        }
-        flush()
-        return chunks
-    }
-    
-    private fun dayFor(line: String): String? {
-        val weekMatch = Regex("(?i)(?:^|\\s)(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?:\\s|$)").find(line)
-        if (weekMatch != null) return weekMatch.groupValues[1].trim().replaceFirstChar { it.uppercase() }
-        if (DAY_WITH_WORKOUT.containsMatchIn(line)) return "Giorno con allenamento"
-        if (DAY_WITHOUT_WORKOUT.containsMatchIn(line)) return "Giorno senza allenamento"
-        return null
-    }
-    
     private fun mealFor(line: String): MealType? = when {
         Regex("(?i)^(pre[- ]?workout|pre[- ]?allenamento|prewout)\\b").containsMatchIn(line) -> MealType.PRE_WORKOUT
         Regex("(?i)^(post[- ]?workout|post[- ]?allenamento)\\b").containsMatchIn(line) -> MealType.POST_WORKOUT
@@ -193,7 +187,7 @@ class DietParser @Inject constructor(
         Regex("(?i)^cena\\b").containsMatchIn(line) -> MealType.DINNER
         else -> null
     }
-    
+
     private fun parseFood(input: String): FoodItem? {
         var line = input.replace(Regex("(?i)^oppure\\s*"), "").trim()
         if (line.isBlank() || classifier.classify(line) == ParsedLineKind.LUNCH_REFERENCE) return null
@@ -238,7 +232,7 @@ class DietParser @Inject constructor(
             return name.takeIf { it.length > 1 }?.let { FoodItem(name = it, quantity = quantity, calories = calories, proteinGrams = proteinGrams, carbsGrams = carbsGrams, fatGrams = fatGrams) }
         }
 
-        return null // Catch-all removed. Only exact matches with quantities count as foods.
+        return null
     }
 
     private class MealDraft(var hasLunchAlternatives: Boolean = false) {
@@ -253,9 +247,9 @@ class DietParser @Inject constructor(
 
     private companion object {
         val STRICT_MEAL_ORDER = listOf(MealType.PRE_WORKOUT, MealType.POST_WORKOUT, MealType.BREAKFAST, MealType.MORNING_SNACK, MealType.LUNCH, MealType.SNACK, MealType.DINNER)
-        val DAY_WITH_WORKOUT = Regex("(?i).*\\bgiorno\\s+con\\s+allenamento\\b.*")
-        val DAY_WITHOUT_WORKOUT = Regex("(?i).*\\bgiorno\\s+senza\\s+allenamento\\b.*")
-        val OPTION_MARKER = Regex("(?i)\\bopzione\\s*\\d+\\b")
+        val DAY_WITH_WORKOUT = Regex("(?i)^giorno\\s+con\\s+allenamento$")
+        val DAY_WITHOUT_WORKOUT = Regex("(?i)^giorno\\s+senza\\s+allenamento$")
+        val OPTION_MARKER = Regex("(?i)^opzione\\s*\\d+$")
         val QUANTITY_FIRST = Regex("(?i)^(?<quantity>\\d+(?:[,.]\\d+)?)\\s*(?<unit>g|gr|ml|pz|pezzi?)\\s+(?<name>.+)$")
         val QUANTITY_LAST = Regex("(?i)^(?<name>.+?)[\\s:–-]+(?<quantity>\\d+(?:[,.]\\d+)?)\\s*(?<unit>g|gr|ml|pz|pezzi?)$")
         val QUANTITY_FIRST_FIND = Regex("(?i)(?<quantity>\\d+(?:[,.]\\d+)?)\\s*(?<unit>g|gr|ml|pz|pezzi?)\\s+(?<name>[a-zA-Z].*)")

@@ -42,17 +42,24 @@ class DietViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 val content = documents.read(uri)
-                val text = when (content) {
-                    is DocumentContent.Text -> content.value
-                    is DocumentContent.Pdf -> textRecognition.recognize(content.pages)
+                val inferenceInput = when (content) {
+                    is DocumentContent.Text -> DietInferenceInput(content.value, extractionMethod = "TXT Document")
+                    is DocumentContent.TextWithPages -> {
+                        val fullText = content.pages.joinToString("\n") { it.text }
+                        DietInferenceInput(fullText, extractionMethod = "PDF_NATIVE_TEXT", pages = content.pages)
+                    }
+                    is DocumentContent.Pdf -> {
+                        val text = textRecognition.recognize(content.pages)
+                        DietInferenceInput(text, extractionMethod = "PdfRenderer + ML Kit OCR")
+                    }
                 }
-                // OCR Text logging removed for privacy.
-                val parsed = parser.parse(text)
+                
+                val parsed = parser.parse(inferenceInput)
                 // Parser Output logging removed for privacy.
                 parsed.also { require(it.days.isNotEmpty()) { "Nessun pasto riconosciuto. Prova un TXT con intestazioni di giorno e pasto." } }
             }.onSuccess { _state.value = DietUiState.Review(it) }
                 .onFailure { 
-                    android.util.Log.e("MLKIT_OCR_OUTPUT", "Error: \${it.message}")
+                    android.util.Log.e("MLKIT_OCR_OUTPUT", "Error: ${it.message}")
                     _state.value = DietUiState.Error(it.message ?: "Impossibile estrarre il piano alimentare.") 
                 }
         }

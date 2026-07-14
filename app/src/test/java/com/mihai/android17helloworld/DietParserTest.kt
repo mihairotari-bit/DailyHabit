@@ -9,7 +9,7 @@ class DietParserTest {
     @Test
     fun testParse() {
         val preprocessor = DietTextPreprocessor(DietLineClassifier())
-        val parser = DietParser(preprocessor, DietLineClassifier())
+        val parser = DietParser(preprocessor, DietLineClassifier(), DietStructureTokenizer())
         val text = """
 GIORNO CON ALLENAMENTO
 PREWOUT
@@ -27,7 +27,7 @@ oppure 50g fiocchi di mais cornflakes
 +
 100g frutta fresca
         """.trimIndent()
-        val plan = parser.parse(text)
+        val plan = parser.parse(DietInferenceInput(text))
         assertTrue(plan.days.isNotEmpty())
     }
 }
