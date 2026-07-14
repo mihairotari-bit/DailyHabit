@@ -43,57 +43,8 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun DailyWelcomeScreen(themeMode: ThemeMode, onWorkout: () -> Unit, onRest: () -> Unit, onNewPlan: () -> Unit, onToggleTheme: (ThemeMode) -> Unit) {
-    var menuExpanded by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 24.dp)) {
-        Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Surface(onClick = onNewPlan, modifier = Modifier.size(56.dp), shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primary, shadowElevation = 6.dp) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Add, "Carica un nuovo piano", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(32.dp)) } }
-            Box {
-                Surface(onClick = { menuExpanded = true }, modifier = Modifier.size(56.dp), shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primaryContainer) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Menu, "Menu", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp)) } }
-                DropdownMenu(
-                    expanded = menuExpanded, 
-                    onDismissRequest = { menuExpanded = false },
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surface)
-                        .width(220.dp),
-                    shape = RoundedCornerShape(24.dp)
-                ) {
-                    DropdownMenuItem(
-                        text = {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
-                                val isDark = themeMode == ThemeMode.DARK || (themeMode == ThemeMode.SYSTEM && systemDark)
-                                
-                                Text("☀️", fontSize = 18.sp)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                androidx.compose.material3.Switch(
-                                    checked = isDark,
-                                    onCheckedChange = { onToggleTheme(if (it) ThemeMode.DARK else ThemeMode.LIGHT) }
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text("🌙", fontSize = 18.sp)
-                            }
-                        },
-                        onClick = { }
-                    )
-                    androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.surfaceVariant)
-                    DropdownMenuItem(
-                        text = { Text("Impostazioni", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface) }, 
-                        onClick = { menuExpanded = false },
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Informazioni", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface) }, 
-                        onClick = { menuExpanded = false },
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-                    )
-                }
-            }
-        }
-        Row(Modifier.fillMaxWidth().padding(top = 54.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Buongiorno 👋", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))

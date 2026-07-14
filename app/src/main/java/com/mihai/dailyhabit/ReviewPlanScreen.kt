@@ -53,10 +53,6 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun ReviewPlanScreen(plan: DietPlan, onBack: () -> Unit, onConfirm: () -> Unit, onFoodChange: (Int, Int, String, FoodItem) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(onClick = onBack, shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(48.dp)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.ArrowBack, "Indietro", tint = MaterialTheme.colorScheme.onSurfaceVariant) } }
-            Spacer(Modifier.weight(1f))
-        }
         if (plan.isTestData || plan.parserEngine == ParserEngine.FAKE_TEST) {
             Box(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.errorContainer).padding(16.dp)) {
                 Text("Dati di test", color = MaterialTheme.colorScheme.onErrorContainer, fontWeight = FontWeight.Bold)

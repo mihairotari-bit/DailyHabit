@@ -5,9 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -75,11 +73,10 @@ class ModelDownloadViewModel @Inject constructor(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModelDownloadScreen(
+fun ModelDownloadScreenWrapper(
     viewModel: ModelDownloadViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit
+    modifier: Modifier = Modifier
 ) {
     val metadata by viewModel.modelMetadata.collectAsState()
     val context = LocalContext.current
@@ -90,86 +87,72 @@ fun ModelDownloadScreen(
         uri?.let { viewModel.importModel(it) }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Gestione Modello LLM") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Modello: ${ModelManifest.MODEL_ID}",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "Dimensione: ${ModelManifest.EXACT_SIZE_BYTES / 1024 / 1024} MB",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Stato: ${metadata.state.name}",
+            style = MaterialTheme.typography.titleLarge,
+            color = when (metadata.state) {
+                ModelState.READY -> MaterialTheme.colorScheme.primary
+                ModelState.FAILED, ModelState.CORRUPTED, ModelState.INSUFFICIENT_STORAGE -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.onSurface
+            }
+        )
+
+        if (metadata.lastError != null) {
+            Text(
+                text = "Errore: ${metadata.lastError}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
             )
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Modello: ${ModelManifest.MODEL_ID}",
-                style = MaterialTheme.typography.titleMedium
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (metadata.state == ModelState.DOWNLOADING || metadata.state == ModelState.VERIFYING) {
+            val progress = if (ModelManifest.EXACT_SIZE_BYTES > 0) {
+                metadata.downloadedBytes.toFloat() / ModelManifest.EXACT_SIZE_BYTES.toFloat()
+            } else 0f
+
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth()
             )
-            Text(
-                text = "Dimensione: ${ModelManifest.EXACT_SIZE_BYTES / 1024 / 1024} MB",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text("${metadata.downloadedBytes / 1024 / 1024} MB / ${ModelManifest.EXACT_SIZE_BYTES / 1024 / 1024} MB")
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Stato: ${metadata.state.name}",
-                style = MaterialTheme.typography.titleLarge,
-                color = when (metadata.state) {
-                    ModelState.READY -> MaterialTheme.colorScheme.primary
-                    ModelState.FAILED, ModelState.CORRUPTED, ModelState.INSUFFICIENT_STORAGE -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.onSurface
-                }
-            )
-
-            if (metadata.lastError != null) {
-                Text(
-                    text = "Errore: ${metadata.lastError}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+            Button(onClick = { viewModel.stopDownload() }) {
+                Text("Pausa Download")
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (metadata.state == ModelState.DOWNLOADING || metadata.state == ModelState.VERIFYING) {
-                val progress = if (ModelManifest.EXACT_SIZE_BYTES > 0) {
-                    metadata.downloadedBytes.toFloat() / ModelManifest.EXACT_SIZE_BYTES.toFloat()
-                } else 0f
-
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text("${metadata.downloadedBytes / 1024 / 1024} MB / ${ModelManifest.EXACT_SIZE_BYTES / 1024 / 1024} MB")
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(onClick = { viewModel.stopDownload() }) {
-                    Text("Pausa Download")
-                }
-            } else if (metadata.state != ModelState.READY) {
-                Button(onClick = { viewModel.startDownload() }) {
-                    Text(if (metadata.state == ModelState.PAUSED) "Riprendi Download" else "Scarica Modello")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(onClick = { filePickerLauncher.launch(arrayOf("*/*")) }) {
-                    Text("Importa file .litertlm")
-                }
-            } else {
-                Button(onClick = { viewModel.deleteModel() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Elimina")
-                    Spacer(Modifier.width(8.dp))
-                    Text("Elimina Modello")
-                }
+        } else if (metadata.state != ModelState.READY) {
+            Button(onClick = { viewModel.startDownload() }) {
+                Text(if (metadata.state == ModelState.PAUSED) "Riprendi Download" else "Scarica Modello")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(onClick = { filePickerLauncher.launch(arrayOf("*/*")) }) {
+                Text("Importa file .litertlm")
+            }
+        } else {
+            Button(onClick = { viewModel.deleteModel() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+                Icon(Icons.Default.Delete, contentDescription = "Elimina")
+                Spacer(Modifier.width(8.dp))
+                Text("Elimina Modello")
             }
         }
     }

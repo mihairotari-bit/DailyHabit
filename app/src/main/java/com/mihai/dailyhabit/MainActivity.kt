@@ -44,11 +44,17 @@ class MainActivity : ComponentActivity() {
             val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
             HelloTheme(darkTheme = isDarkTheme) {
-                DietApp(dietViewModel, trackingViewModel, historyViewModel, themeMode) { newMode ->
-                    coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                        themePreferences.setThemeMode(newMode)
+                DailyHabitAppScaffold(
+                    dietViewModel = dietViewModel,
+                    trackingViewModel = trackingViewModel,
+                    historyViewModel = historyViewModel,
+                    themeMode = themeMode,
+                    onToggleTheme = { newMode ->
+                        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            themePreferences.setThemeMode(newMode)
+                        }
                     }
-                }
+                )
             }
         }
     }

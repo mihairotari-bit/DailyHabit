@@ -24,5 +24,5 @@ fun DailyHabitRoot(diet: DietViewModel, tracking: DailyTrackingViewModel, histor
     val alpha by animateFloatAsState(if (splash) 1f else 0f, label = "splashAlpha")
     if (splash) Box(Modifier.fillMaxSize().background(androidx.compose.material3.MaterialTheme.colorScheme.surface), Alignment.Center) {
         Image(painterResource(R.drawable.logo), contentDescription = "DailyHabit", modifier = Modifier.alpha(alpha))
-    } else DietApp(diet, tracking, history, themeMode = ThemeMode.SYSTEM, onToggleTheme = {})
+    } else DailyHabitAppScaffold(diet, tracking, history, themeMode = ThemeMode.SYSTEM, onToggleTheme = {})
 }
