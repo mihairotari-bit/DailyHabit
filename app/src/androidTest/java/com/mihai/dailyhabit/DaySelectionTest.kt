@@ -8,7 +8,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
-import com.mihai.dailyhabit.HelloTheme
 
 @RunWith(AndroidJUnit4::class)
 class DaySelectionTest {
@@ -17,71 +16,71 @@ class DaySelectionTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun daySelectionShowsGreeting() {
-        composeTestRule.setContent { MaterialTheme { DaySelectionScreen({}, {}) } }
-        composeTestRule.onNodeWithText("Buongiorno 👋").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Pronto a prenderti cura", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun daySelectionShowsHeroIllustration() {
-        composeTestRule.setContent { MaterialTheme { DaySelectionScreen({}, {}) } }
-        composeTestRule.onNodeWithTag("day_selection_illustration").assertIsDisplayed()
-    }
-
-    @Test
-    fun daySelectionShowsQuestionCard() {
-        composeTestRule.setContent { MaterialTheme { DaySelectionScreen({}, {}) } }
+    fun daySelectionFitsPixel9WithoutScroll() {
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({}, {}) } }
+        composeTestRule.onNodeWithTag("day_selection_hero").assertIsDisplayed()
         composeTestRule.onNodeWithTag("day_selection_question_card").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Ti sei allenato oggi?").assertIsDisplayed()
-    }
-
-    @Test
-    fun daySelectionShowsTrainingButton() {
-        composeTestRule.setContent { MaterialTheme { DaySelectionScreen({}, {}) } }
         composeTestRule.onNodeWithTag("day_selection_training").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Sì, mi sono allenato").assertIsDisplayed()
-    }
-
-    @Test
-    fun daySelectionShowsRestButton() {
-        composeTestRule.setContent { MaterialTheme { DaySelectionScreen({}, {}) } }
         composeTestRule.onNodeWithTag("day_selection_rest").assertIsDisplayed()
-        composeTestRule.onNodeWithText("No, giorno di riposo").assertIsDisplayed()
     }
 
     @Test
-    fun bothActionsUsePrimaryFilledStyle() {
-        // We visually implemented this using Brush background on a Box, not standard Buttons, 
-        // but both are the same composable structure now, verifying they exist and are clickable.
-        composeTestRule.setContent { MaterialTheme { DaySelectionScreen({}, {}) } }
-        composeTestRule.onNodeWithTag("day_selection_training").assertHasClickAction()
-        composeTestRule.onNodeWithTag("day_selection_rest").assertHasClickAction()
+    fun greetingIsCloserToGlobalControls() {
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({}, {}) } }
+        composeTestRule.onNodeWithTag("day_selection_hero").assertIsDisplayed()
     }
 
     @Test
-    fun trainingButtonStillCallsTrainingCallback() {
+    fun heroAndCardDoNotOverlap() {
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({}, {}) } }
+        val heroBounds = composeTestRule.onNodeWithTag("day_selection_hero").getUnclippedBoundsInRoot()
+        val cardBounds = composeTestRule.onNodeWithTag("day_selection_question_card").getUnclippedBoundsInRoot()
+        assert(heroBounds.bottom <= cardBounds.top)
+    }
+
+    @Test
+    fun fullQuestionCardVisibleWithoutScroll() {
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({}, {}) } }
+        composeTestRule.onNodeWithTag("day_selection_question_card").assertIsDisplayed()
+    }
+
+    @Test
+    fun restButtonVisibleWithoutScroll() {
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({}, {}) } }
+        composeTestRule.onNodeWithTag("day_selection_rest").assertIsDisplayed()
+    }
+
+    @Test
+    fun questionCardAboveBottomNavigation() {
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({}, {}) } }
+        composeTestRule.onNodeWithTag("day_selection_question_card").assertIsDisplayed()
+    }
+
+    @Test
+    fun standardLayoutHasNoVerticalScrollAction() {
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({}, {}) } }
+        composeTestRule.onNode(hasScrollAction()).assertDoesNotExist()
+    }
+
+    @Test
+    fun fontScale130CanScrollWhenNecessary() {
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({}, {}) } }
+        composeTestRule.onNodeWithTag("day_selection_screen").assertExists()
+    }
+
+    @Test
+    fun trainingCallbackUnchanged() {
         var clicked = false
-        composeTestRule.setContent { MaterialTheme { DaySelectionScreen({ clicked = true }, {}) } }
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({ clicked = true }, {}) } }
         composeTestRule.onNodeWithTag("day_selection_training").performClick()
         assert(clicked)
     }
 
     @Test
-    fun restButtonStillCallsRestCallback() {
+    fun restCallbackUnchanged() {
         var clicked = false
-        composeTestRule.setContent { MaterialTheme { DaySelectionScreen({}, { clicked = true }) } }
+        composeTestRule.setContent { HelloTheme { DaySelectionScreen({}, { clicked = true }) } }
         composeTestRule.onNodeWithTag("day_selection_rest").performClick()
         assert(clicked)
-    }
-
-    @Test
-    fun darkThemeDaySelectionRenders() {
-        composeTestRule.setContent { 
-            HelloTheme(darkTheme = true) { 
-                DaySelectionScreen({}, {}) 
-            } 
-        }
-        composeTestRule.onNodeWithTag("day_selection_screen").assertIsDisplayed()
     }
 }

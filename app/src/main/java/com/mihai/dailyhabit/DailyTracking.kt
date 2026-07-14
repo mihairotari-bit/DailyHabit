@@ -261,15 +261,15 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
             .testTag("day_selection_screen")
     ) {
         val screenHeight = maxHeight
-        val isShortScreen = screenHeight < 650.dp
+        val shouldScroll = screenHeight < 680.dp
         
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .then(if (isShortScreen) Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()) else Modifier),
+                .then(if (shouldScroll) Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()) else Modifier),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(if (isShortScreen) 24.dp else screenHeight * 0.12f))
+            Spacer(Modifier.height(12.dp))
             
             Row(
                 Modifier
@@ -284,7 +284,7 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
                         style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Medium), 
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         "Pronto a prenderti cura\ndi te oggi?", 
                         style = MaterialTheme.typography.titleLarge, 
@@ -297,13 +297,13 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
                     contentDescription = null,
                     modifier = Modifier
                         .weight(0.85f)
-                        .heightIn(min = 170.dp, max = 220.dp)
+                        .heightIn(min = 145.dp, max = 185.dp)
                         .testTag("day_selection_illustration"),
                     contentScale = ContentScale.Fit
                 )
             }
             
-            Spacer(Modifier.height(if (isShortScreen) 24.dp else screenHeight * 0.05f))
+            Spacer(Modifier.height(8.dp))
             
             Card(
                 modifier = Modifier
@@ -316,20 +316,20 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
-                    Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 32.dp, start = 24.dp, end = 24.dp), 
+                    Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 22.dp, start = 24.dp, end = 24.dp), 
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.EnergySavingsLeaf, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                    Box(Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.EnergySavingsLeaf, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                     }
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(12.dp))
                     Text(
                         "Ti sei allenato oggi?", 
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold), 
                         color = MaterialTheme.colorScheme.onSurface, 
                         textAlign = TextAlign.Center
                     )
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         "La tua risposta ci aiuterà a mostrarti il piano nutrizionale più adatto a questa giornata.", 
                         style = MaterialTheme.typography.bodyLarge, 
@@ -338,13 +338,13 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
                         lineHeight = 24.sp
                     )
                     
-                    Spacer(Modifier.height(40.dp))
+                    Spacer(Modifier.height(24.dp))
                     
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(68.dp)
-                            .clip(RoundedCornerShape(34.dp))
+                            .height(60.dp)
+                            .clip(RoundedCornerShape(30.dp))
                             .background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)))
                             .clickable(onClick = onTrainingSelected)
                             .testTag("day_selection_training"),
@@ -363,13 +363,13 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
                         }
                     }
                     
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(12.dp))
                     
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(68.dp)
-                            .clip(RoundedCornerShape(34.dp))
+                            .height(60.dp)
+                            .clip(RoundedCornerShape(30.dp))
                             .background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)))
                             .clickable(onClick = onRestSelected)
                             .testTag("day_selection_rest"),
@@ -390,11 +390,7 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
                 }
             }
             
-            if (!isShortScreen) {
-                Spacer(Modifier.weight(1f))
-            } else {
-                Spacer(Modifier.height(32.dp))
-            }
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
