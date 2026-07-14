@@ -20,3 +20,10 @@ local.properties
 /window_dump.xml
 /logcat.txt
 /*.pdf
+
+# LiteRT Models
+**/*.litertlm
+**/*.part
+**/models/
+**/logcat*.txt
+**/*.apk
