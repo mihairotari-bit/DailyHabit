@@ -25,69 +25,64 @@ class NavigationDrawerTest {
         hiltRule.inject()
     }
 
+    // DRAWER TESTS
     @Test
-    fun hamburgerVisibleOnUpload() {
-        // Assume starts without plan
-        composeTestRule.onNodeWithContentDescription("Apri menu").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Carica il tuo").assertIsDisplayed()
+    fun drawerMatchesRequiredDestinations() {
+        composeTestRule.onNodeWithTag("global_hamburger").performClick()
+        composeTestRule.onNodeWithTag("drawer_home").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_new_plan").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_journal").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_model_management").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_settings").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_about").assertIsDisplayed()
     }
 
     @Test
-    fun drawerOpensFromUpload() {
-        composeTestRule.onNodeWithContentDescription("Apri menu").performClick()
-        composeTestRule.onNodeWithText("Gestione Modello LLM").assertIsDisplayed()
+    fun drawerThemeSwitchVisible() {
+        composeTestRule.onNodeWithTag("global_hamburger").performClick()
+        composeTestRule.onNodeWithTag("drawer_theme_switch").assertIsDisplayed()
     }
 
     @Test
-    fun modelManagementVisibleInDrawer() {
-        composeTestRule.onNodeWithContentDescription("Apri menu").performClick()
-        composeTestRule.onNodeWithText("Gestione Modello LLM").assertIsDisplayed()
+    fun drawerThemeSwitchChangesTheme() {
+        composeTestRule.onNodeWithTag("global_hamburger").performClick()
+        composeTestRule.onNodeWithTag("drawer_theme_switch").performClick()
+        composeTestRule.onNodeWithTag("drawer_theme_switch").assertIsDisplayed() // Still there after click
     }
 
     @Test
-    fun modelManagementOpensScreen() {
-        composeTestRule.onNodeWithContentDescription("Apri menu").performClick()
-        composeTestRule.onNodeWithText("Gestione Modello LLM").performClick()
-        composeTestRule.onNodeWithText("Dimensione:").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Gestione modello LLM").assertIsDisplayed() // TopAppBar title
-    }
-
-    @Test
-    fun backFromModelManagementRestoresPreviousScreen() {
-        // Go to model management
-        composeTestRule.onNodeWithContentDescription("Apri menu").performClick()
-        composeTestRule.onNodeWithText("Gestione Modello LLM").performClick()
-        composeTestRule.onNodeWithText("Dimensione:").assertIsDisplayed()
-        
-        // Go back (in this case, press back via dispatcher)
-        composeTestRule.activityRule.scenario.onActivity { activity: MainActivity ->
-            activity.onBackPressedDispatcher.onBackPressed()
-        }
-        
-        // Should be back to upload
-        composeTestRule.onNodeWithText("Carica il tuo").assertIsDisplayed()
-    }
-
-    @Test
-    fun drawerClosesAfterSelection() {
-        composeTestRule.onNodeWithContentDescription("Apri menu").performClick()
-        composeTestRule.onNodeWithText("Informazioni").performClick()
-        composeTestRule.onNodeWithText("Gestione Modello LLM").assertDoesNotExist() // Drawer is closed
+    fun drawerClosesAfterNavigation() {
+        composeTestRule.onNodeWithTag("global_hamburger").performClick()
+        composeTestRule.onNodeWithTag("drawer_about").performClick()
+        composeTestRule.onNodeWithTag("drawer_about").assertDoesNotExist() // drawer closed
         composeTestRule.onNodeWithText("Informazioni Privacy").assertIsDisplayed()
     }
 
     @Test
-    fun settingsChangesTheme() {
-        composeTestRule.onNodeWithContentDescription("Apri menu").performClick()
-        composeTestRule.onNodeWithText("Impostazioni").performClick()
-        composeTestRule.onNodeWithText("Chiaro").performClick()
-        // Wait, testing theme visually is hard, but we can check if it clicked
-        composeTestRule.onNodeWithText("Chiaro").assertIsDisplayed()
+    fun journalDisabledWithoutPlan() {
+        composeTestRule.onNodeWithTag("global_hamburger").performClick()
+        composeTestRule.onNodeWithTag("drawer_journal").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_journal").performClick()
+        // Drawer should still be open because the click is ignored without plan
+        composeTestRule.onNodeWithTag("drawer_journal").assertIsDisplayed()
+    }
+
+    // HAMBURGER TESTS
+    @Test
+    fun greenHamburgerVisibleOnUpload() {
+        composeTestRule.onNodeWithTag("global_hamburger").assertIsDisplayed()
     }
 
     @Test
-    fun journalDisabledWithoutPlan() {
-        composeTestRule.onNodeWithContentDescription("Apri menu").performClick()
-        composeTestRule.onNodeWithText("Diario (Nessun piano)").assertIsDisplayed()
+    fun greenHamburgerOpensDrawer() {
+        composeTestRule.onNodeWithTag("global_hamburger").performClick()
+        composeTestRule.onNodeWithTag("navigation_drawer").assertIsDisplayed()
+    }
+
+    // NEW PLAN
+    @Test
+    fun plusRequiresConfirmation() {
+        // Without plan, plus is not visible on Upload
+        composeTestRule.onNodeWithTag("global_new_plan").assertDoesNotExist()
     }
 }

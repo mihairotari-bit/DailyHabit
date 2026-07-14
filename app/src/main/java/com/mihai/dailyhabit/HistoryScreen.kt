@@ -40,7 +40,9 @@ fun HistoryScreen(viewModel: HistoryViewModel) {
         viewModel.loadLogs()
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().padding(top = 72.dp)) {
+        Text("Diario", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(16.dp))
+        
         if (logs.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 Text("Nessun pasto salvato.", style = MaterialTheme.typography.bodyLarge)
