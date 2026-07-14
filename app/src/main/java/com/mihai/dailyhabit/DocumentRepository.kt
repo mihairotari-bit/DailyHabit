@@ -18,10 +18,14 @@ import kotlinx.coroutines.withContext
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 
+sealed interface PdfPage {
+    data class NativeText(val pageNumber: Int, val text: String) : PdfPage
+    data class OcrRequired(val pageNumber: Int, val bitmap: Bitmap) : PdfPage
+}
+
 sealed interface DocumentContent {
     data class Text(val value: String) : DocumentContent
-    data class TextWithPages(val pages: List<ExtractedPage>) : DocumentContent
-    data class Pdf(val pages: List<Bitmap>) : DocumentContent
+    data class HybridPdf(val pages: List<PdfPage>) : DocumentContent
 }
 
 interface DocumentReader {
@@ -50,9 +54,20 @@ class DocumentRepository @Inject constructor(
             DocumentKind.PDF -> {
                 val nativePages = nativeExtractor.extract(resolver, uri)
                 if (nativePages != null) {
-                    DocumentContent.TextWithPages(nativePages)
+                    val bitmaps = lazy { renderPdf(uri) }
+                    val hybridPages = nativePages.mapIndexed { index, extractedPage ->
+                        if (extractedPage.isNativeValid) {
+                            PdfPage.NativeText(extractedPage.pageNumber, extractedPage.text)
+                        } else {
+                            val bitmap = bitmaps.value.getOrNull(index) ?: Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+                            PdfPage.OcrRequired(extractedPage.pageNumber, bitmap)
+                        }
+                    }
+                    DocumentContent.HybridPdf(hybridPages)
                 } else {
-                    DocumentContent.Pdf(renderPdf(uri))
+                    val bitmaps = renderPdf(uri)
+                    val hybridPages = bitmaps.mapIndexed { index, bitmap -> PdfPage.OcrRequired(index + 1, bitmap) }
+                    DocumentContent.HybridPdf(hybridPages)
                 }
             }
             DocumentKind.UNKNOWN -> error("Formato non supportato. Scegli TXT, PDF o DOCX.")

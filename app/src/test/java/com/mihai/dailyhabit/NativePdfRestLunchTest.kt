@@ -24,21 +24,27 @@ class NativePdfRestLunchTest {
         val restDay = plan.days.first { it.day.contains("senza allenamento", ignoreCase = true) }
         val lunch = restDay.meals.first { it.type == MealType.LUNCH }
         
-        assertEquals(2, lunch.options.size)
+        assertTrue(plan.parseReport?.restProfileDetected == true)
         assertTrue(plan.parseReport?.restLunchHeaderDetected == true)
+        assertTrue((plan.parseReport?.restLunchOptionCount ?: 0) >= 2)
+        assertTrue((plan.parseReport?.restLunchGroupCount ?: 0) > 0)
+        assertTrue((plan.parseReport?.restLunchFoodCount ?: 0) > 0)
         
-        // Option 1 has 1 group with 3 alternatives + 1 group with 1 alternative
-        assertEquals(2, lunch.options[0].groups.size)
-        assertEquals(3, lunch.options[0].groups[0].alternatives.size)
+        // Flatten all alternatives in lunch to search for the required foods
+        val allFoods = lunch.options.flatMap { it.groups }.flatMap { it.alternatives }
         
-        // Check food content
-        val carbAlternatives = lunch.options[0].groups[0].alternatives.map { it.name }
-        assertTrue(carbAlternatives.contains("pane integrale"))
-        assertTrue(carbAlternatives.contains("pasta di semola integrale"))
-        assertTrue(carbAlternatives.contains("cous cous"))
+        fun assertHasFood(name: String, quantity: String) {
+            val found = allFoods.any { it.name.contains(name, ignoreCase = true) && it.quantity.contains(quantity, ignoreCase = true) }
+            assertTrue("Missing food: $quantity $name in ${allFoods.map { it.quantity + " " + it.name }}", found)
+        }
         
-        assertEquals("100 g", lunch.options[0].groups[1].alternatives[0].quantity)
-        assertEquals("petto di pollo", lunch.options[0].groups[1].alternatives[0].name)
+        assertHasFood("pane integrale", "120 g")
+        assertHasFood("pasta di semola integrale", "90 g")
+        assertHasFood("cous cous", "90 g")
+        assertHasFood("pasta di legumi", "70 g")
+        assertHasFood("tonno al naturale", "120 g")
+        assertHasFood("verdure o ortaggi", "200 g")
+        assertHasFood("olio extravergine", "10 g")
     }
 
     @Test

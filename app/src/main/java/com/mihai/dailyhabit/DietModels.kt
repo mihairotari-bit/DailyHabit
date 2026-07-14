@@ -30,9 +30,12 @@ data class ParseReport(
     // REST Lunch diagnostics
     val restProfileDetected: Boolean = false,
     val restLunchHeaderDetected: Boolean = false,
+    val restLunchBlockStart: Boolean = false,
     val restLunchOptionCount: Int = 0,
     val restLunchGroupCount: Int = 0,
     val restLunchFoodCount: Int = 0,
+    
+    val ocrFallbackPageCount: Int = 0,
     
     val warnings: List<String> = emptyList()
 )

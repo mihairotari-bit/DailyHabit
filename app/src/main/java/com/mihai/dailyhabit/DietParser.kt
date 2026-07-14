@@ -13,7 +13,7 @@ class DietParser @Inject constructor(
         val rawTokens = tokenizer.tokenize(input.rawText)
         val fullTextAfterTokenization = rawTokens.joinToString("\n")
         val sanitizedText = preprocessor.preprocess(fullTextAfterTokenization)
-        val tokens = sanitizedText.split("\n").filter { it.isNotBlank() }
+        val tokens = sanitizedText.split("\n").map { it.trim() }.filter { it.isNotBlank() }
         
         var totalLines = tokens.size
         var discardedLines = 0
@@ -22,97 +22,85 @@ class DietParser @Inject constructor(
         
         val type = detectPlanType(tokens.joinToString("\n"))
         
-        // Find Day Profiles
-        val dayIndices = mutableListOf<Pair<String, Int>>()
-        for ((i, token) in tokens.withIndex()) {
-            val lower = token.lowercase()
-            if (DAY_WITH_WORKOUT.matches(lower)) dayIndices.add("Giorno con allenamento" to i)
-            else if (DAY_WITHOUT_WORKOUT.matches(lower)) dayIndices.add("Giorno senza allenamento" to i)
-            else {
-                val weekMatch = Regex("(?i)^(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)$").find(token)
-                if (weekMatch != null) dayIndices.add(weekMatch.groupValues[1].replaceFirstChar { it.uppercase() } to i)
+        val days = mutableListOf<DailyMeals>()
+        
+        // Split Document into Day Blocks
+        val dayBlocks = splitIntoDayBlocks(tokens)
+        
+        var restProfileDetected = false
+        var restLunchHeaderDetected = false
+        var restLunchBlockStart = false
+        var restLunchOptionCount = 0
+        var restLunchGroupCount = 0
+        var restLunchFoodCount = 0
+
+        for ((dayName, dayTokens) in dayBlocks) {
+            val isRest = dayName.contains("senza allenamento", ignoreCase = true)
+            val isTraining = dayName.contains("con allenamento", ignoreCase = true)
+            if (isRest) restProfileDetected = true
+            
+            val profile = when {
+                isTraining -> DayProfileType.TRAINING
+                isRest -> DayProfileType.REST
+                else -> DayProfileType.UNKNOWN
             }
-        }
-        
-        if (dayIndices.isEmpty()) {
-            dayIndices.add("Piano Singolo" to 0) // Fallback if no day found
-        }
-        
-        println("TOKENS: $tokens"); println("DAY INDICES: $dayIndices"); val plans = linkedMapOf<String, LinkedHashMap<MealType, MealDraft>>()
-        
-        for (d in 0 until dayIndices.size) {
-            val (dayName, startIdx) = dayIndices[d]
-            val endIdx = if (d + 1 < dayIndices.size) dayIndices[d + 1].second else tokens.size
             
-            val dayTokens = tokens.subList(startIdx, endIdx)
+            // Split Day Block into Meal Blocks
+            val mealBlocks = splitIntoMealBlocks(dayTokens)
             
-            // Find Meal Headers within this Day
-            val mealIndices = mutableListOf<Pair<MealType, Int>>()
-            for ((i, token) in dayTokens.withIndex()) {
-                val meal = mealFor(token)
-                if (meal != null) {
-                    mealIndices.add(meal to i)
+            val parsedMeals = mutableListOf<Meal>()
+            
+            for ((mealType, mealTokens) in mealBlocks) {
+                if (isRest && mealType == MealType.LUNCH) {
+                    restLunchHeaderDetected = true
+                    if (mealTokens.isNotEmpty()) restLunchBlockStart = true
                 }
-            }
-            
-            for (m in 0 until mealIndices.size) {
-                val (mealType, mStart) = mealIndices[m]
-                val mEnd = if (m + 1 < mealIndices.size) mealIndices[m + 1].second else dayTokens.size
                 
-                val mealTokens = dayTokens.subList(mStart + 1, mEnd) // Exclude the header itself
+                var hasLunchAlternatives = false
+                val options = mutableListOf<MealOption>()
                 
-                val draft = plans.getOrPut(dayName) { linkedMapOf() }.getOrPut(mealType) { MealDraft() }
-                
-                var currentOption: MutableList<MutableList<FoodItem>>? = null
-                var currentGroup: MutableList<FoodItem>? = null
+                var currentOptionGroups = mutableListOf<OptionGroup>()
+                var currentGroupFoods = mutableListOf<FoodItem>()
                 
                 fun flushGroup() {
-                    if (!currentGroup.isNullOrEmpty()) {
-                        if (currentOption == null) {
-                            currentOption = mutableListOf()
-                            draft.options.add(currentOption!!)
-                        }
-                        currentOption!!.add(currentGroup!!.toMutableList())
-                        currentGroup = null
+                    if (currentGroupFoods.isNotEmpty()) {
+                        currentOptionGroups.add(OptionGroup(alternatives = currentGroupFoods.toList()))
+                        currentGroupFoods.clear()
                     }
                 }
                 
-                fun startOption() {
+                fun flushOption() {
                     flushGroup()
-                    currentOption = mutableListOf()
-                    draft.options.add(currentOption!!)
-                }
-                
-                fun startGroup() {
-                    flushGroup()
-                    currentGroup = mutableListOf()
+                    if (currentOptionGroups.isNotEmpty()) {
+                        options.add(MealOption(groups = currentOptionGroups.toList()))
+                        currentOptionGroups.clear()
+                    }
                 }
                 
                 for (token in mealTokens) {
                     if (classifier.isLunchReference(token.lowercase())) {
-                        draft.hasLunchAlternatives = true; println("LUNCH REF FOUND IN TOKEN: \$token for Meal: \$currentMealType")
+                        hasLunchAlternatives = true
                     }
                     val kind = classifier.classify(token)
                     if (kind == ParsedLineKind.UNKNOWN_NOISE) { unknownLines++; discardedLines++; continue }
                     
                     if (kind == ParsedLineKind.OPTION_MARKER || OPTION_MARKER.containsMatchIn(token)) {
-                        startOption()
+                        flushOption()
                         continue
                     }
                     if (kind == ParsedLineKind.GROUP_MARKER || token == "+") {
-                        startGroup()
+                        flushGroup()
                         continue
                     }
                     if (kind == ParsedLineKind.LUNCH_REFERENCE) {
-                        continue // Already set hasLunchAlternatives
+                        continue
                     }
                     
                     if (kind == ParsedLineKind.FOOD_CANDIDATE) {
                         val food = parseFood(token)
                         if (food != null) {
                             foodsExtracted++
-                            if (currentGroup == null) currentGroup = mutableListOf()
-                            currentGroup!!.add(food)
+                            currentGroupFoods.add(food)
                         } else {
                             discardedLines++
                         }
@@ -120,15 +108,24 @@ class DietParser @Inject constructor(
                         discardedLines++
                     }
                 }
-                flushGroup()
+                flushOption() // Flush any remaining items in the last meal
+                
+                if (options.isNotEmpty() || hasLunchAlternatives) {
+                    if (isRest && mealType == MealType.LUNCH) {
+                        restLunchOptionCount = options.size
+                        restLunchGroupCount = options.sumOf { it.groups.size }
+                        restLunchFoodCount = options.sumOf { it.groups.sumOf { g -> g.alternatives.size } }
+                    }
+                    parsedMeals.add(Meal(mealType, options, hasLunchAlternatives))
+                }
             }
+            days.add(DailyMeals(dayName, parsedMeals, profileType = profile))
         }
-        
-        val restDay = plans.entries.find { it.key.contains("senza allenamento", ignoreCase = true) }?.value
-        val restLunch = restDay?.get(MealType.LUNCH)
-        val restLunchOptions = restLunch?.options?.size ?: 0
-        val restLunchGroups = restLunch?.options?.sumOf { it.size } ?: 0
-        val restLunchFoods = restLunch?.options?.sumOf { it.sumOf { g -> g.size } } ?: 0
+
+        val warningsList = mutableListOf<String>()
+        if (days.isEmpty()) {
+            warningsList.add("DAY_PROFILE_NOT_FOUND")
+        }
 
         val report = ParseReport(
             extractionMethod = input.extractionMethod,
@@ -137,28 +134,81 @@ class DietParser @Inject constructor(
             discardedLines = discardedLines,
             foodsExtracted = foodsExtracted,
             unknownLines = unknownLines,
-            daysFound = plans.size,
-            mealsFound = plans.values.sumOf { it.size },
-            restProfileDetected = restDay != null,
-            restLunchHeaderDetected = restLunch != null,
-            restLunchOptionCount = restLunchOptions,
-            restLunchGroupCount = restLunchGroups,
-            restLunchFoodCount = restLunchFoods,
-            warnings = emptyList()
+            daysFound = days.size,
+            mealsFound = days.sumOf { it.meals.size },
+            restProfileDetected = restProfileDetected,
+            restLunchHeaderDetected = restLunchHeaderDetected,
+            restLunchBlockStart = restLunchBlockStart,
+            restLunchOptionCount = restLunchOptionCount,
+            restLunchGroupCount = restLunchGroupCount,
+            restLunchFoodCount = restLunchFoodCount,
+            ocrFallbackPageCount = input.pages.count { !it.isNativeValid },
+            warnings = warningsList
         )
 
         return DietPlan(
             type = type,
             parseReport = report,
-            days = plans.map { (label, meals) ->
-                val profile = when {
-                    label.contains("con allenamento", ignoreCase = true) -> DayProfileType.TRAINING
-                    label.contains("senza allenamento", ignoreCase = true) -> DayProfileType.REST
-                    else -> DayProfileType.UNKNOWN
-                }
-                DailyMeals(label, STRICT_MEAL_ORDER.mapNotNull { t -> meals[t]?.toMeal(t) }, profileType = profile)
-            }
+            days = days
         )
+    }
+    
+    private fun splitIntoDayBlocks(tokens: List<String>): List<Pair<String, List<String>>> {
+        val blocks = mutableListOf<Pair<String, List<String>>>()
+        var currentDay: String? = null
+        var currentTokens = mutableListOf<String>()
+        
+        for (token in tokens) {
+            val lower = token.lowercase()
+            val weekMatch = Regex("(?i)^(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)$").find(token)
+            
+            if (DAY_WITH_WORKOUT.matches(lower)) {
+                if (currentDay != null) blocks.add(currentDay to currentTokens.toList())
+                currentDay = "Giorno con allenamento"
+                currentTokens.clear()
+            } else if (DAY_WITHOUT_WORKOUT.matches(lower)) {
+                if (currentDay != null) blocks.add(currentDay to currentTokens.toList())
+                currentDay = "Giorno senza allenamento"
+                currentTokens.clear()
+            } else if (weekMatch != null) {
+                if (currentDay != null) blocks.add(currentDay to currentTokens.toList())
+                currentDay = weekMatch.groupValues[1].replaceFirstChar { it.uppercase() }
+                currentTokens.clear()
+            } else {
+                if (currentDay != null) {
+                    currentTokens.add(token)
+                }
+            }
+        }
+        if (currentDay != null) {
+            blocks.add(currentDay to currentTokens.toList())
+        }
+        return blocks
+    }
+    
+    private fun splitIntoMealBlocks(tokens: List<String>): List<Pair<MealType, List<String>>> {
+        val blocks = mutableListOf<Pair<MealType, List<String>>>()
+        var currentMeal: MealType? = null
+        var currentTokens = mutableListOf<String>()
+        
+        for (token in tokens) {
+            val meal = mealFor(token)
+            if (meal != null) {
+                if (currentMeal != null) {
+                    blocks.add(currentMeal to currentTokens.toList())
+                }
+                currentMeal = meal
+                currentTokens.clear()
+            } else {
+                if (currentMeal != null) {
+                    currentTokens.add(token)
+                }
+            }
+        }
+        if (currentMeal != null) {
+            blocks.add(currentMeal to currentTokens.toList())
+        }
+        return blocks.sortedBy { STRICT_MEAL_ORDER.indexOf(it.first) }
     }
 
     private fun detectPlanType(text: String): PlanType {
@@ -233,16 +283,6 @@ class DietParser @Inject constructor(
         }
 
         return null
-    }
-
-    private class MealDraft(var hasLunchAlternatives: Boolean = false) {
-        val options: MutableList<MutableList<MutableList<FoodItem>>> = mutableListOf()
-        fun toMeal(type: MealType): Meal {
-            val mealOptions = options.map { opt ->
-                MealOption(groups = opt.map { grp -> OptionGroup(alternatives = grp.toList()) })
-            }.filter { it.groups.isNotEmpty() }
-            return Meal(type, mealOptions, hasLunchAlternatives)
-        }
     }
 
     private companion object {

@@ -11,11 +11,14 @@ import kotlinx.coroutines.withContext
 
 data class ExtractedPage(
     val pageNumber: Int,
-    val text: String
+    val text: String,
+    val isNativeValid: Boolean
 )
 
 @Singleton
-class PdfNativeTextExtractor @Inject constructor() {
+class PdfNativeTextExtractor @Inject constructor(
+    private val qualityEvaluator: NativeTextQualityEvaluator
+) {
 
     suspend fun extract(resolver: ContentResolver, uri: Uri): List<ExtractedPage>? = withContext(Dispatchers.IO) {
         var document: PDDocument? = null
@@ -30,29 +33,16 @@ class PdfNativeTextExtractor @Inject constructor() {
                 stripper.startPage = p
                 stripper.endPage = p
                 val text = stripper.getText(document).trim()
-                pages.add(ExtractedPage(p, text))
+                val result = qualityEvaluator.evaluate(text)
+                pages.add(ExtractedPage(p, text, result.isValid))
             }
             
-            if (isTextValid(pages)) {
-                return@withContext pages
-            } else {
-                return@withContext null
-            }
+            return@withContext pages
         } catch (e: Exception) {
             e.printStackTrace()
             return@withContext null
         } finally {
             document?.close()
         }
-    }
-    
-    private fun isTextValid(pages: List<ExtractedPage>): Boolean {
-        val fullText = pages.joinToString("\n") { it.text }.lowercase()
-        // A minimal valid diet PDF must contain some key words. 
-        // If it's a scanned PDF, PDFBox returns empty or garbage.
-        val hasDay = fullText.contains("giorno") || fullText.contains("luned") || fullText.contains("marted")
-        val hasMeal = fullText.contains("colazione") || fullText.contains("pranzo") || fullText.contains("cena")
-        
-        return hasDay && hasMeal
     }
 }

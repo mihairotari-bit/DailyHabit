@@ -44,13 +44,22 @@ class DietViewModel @Inject constructor(
                 val content = documents.read(uri)
                 val inferenceInput = when (content) {
                     is DocumentContent.Text -> DietInferenceInput(content.value, extractionMethod = "TXT Document")
-                    is DocumentContent.TextWithPages -> {
-                        val fullText = content.pages.joinToString("\n") { it.text }
-                        DietInferenceInput(fullText, extractionMethod = "PDF_NATIVE_TEXT", pages = content.pages)
-                    }
-                    is DocumentContent.Pdf -> {
-                        val text = textRecognition.recognize(content.pages)
-                        DietInferenceInput(text, extractionMethod = "PdfRenderer + ML Kit OCR")
+                    is DocumentContent.HybridPdf -> {
+                        val extractedPages = mutableListOf<ExtractedPage>()
+                        var ocrCount = 0
+                        for (page in content.pages) {
+                            when (page) {
+                                is PdfPage.NativeText -> extractedPages.add(ExtractedPage(page.pageNumber, page.text, true))
+                                is PdfPage.OcrRequired -> {
+                                    ocrCount++
+                                    val text = textRecognition.recognize(listOf(page.bitmap))
+                                    extractedPages.add(ExtractedPage(page.pageNumber, text, false))
+                                }
+                            }
+                        }
+                        val fullText = extractedPages.joinToString("\n") { it.text }
+                        val method = if (ocrCount == 0) "PDF_NATIVE_TEXT" else if (ocrCount == content.pages.size) "ML_KIT_OCR" else "HYBRID_NATIVE_OCR"
+                        DietInferenceInput(fullText, extractionMethod = method, pages = extractedPages)
                     }
                 }
                 

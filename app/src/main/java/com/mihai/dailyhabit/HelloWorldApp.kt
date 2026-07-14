@@ -95,7 +95,7 @@ fun HelloWorldApp(activity: Activity, viewModel: HelloViewModel) = HelloTheme {
         when {
             state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             state.document is DocumentContent.Text -> TextDocument(Modifier.fillMaxSize(), state.fileName, state.document.value)
-            state.document is DocumentContent.Pdf -> PdfDocument(Modifier.fillMaxSize(), state.fileName, state.document.pages)
+            state.document is DocumentContent.HybridPdf -> PdfDocument(Modifier.fillMaxSize(), state.fileName, state.document.pages)
             else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Seleziona un documento per iniziare.", style = MaterialTheme.typography.bodyLarge) }
         }
     }
@@ -108,9 +108,14 @@ fun HelloWorldApp(activity: Activity, viewModel: HelloViewModel) = HelloTheme {
     }
 }
 
-@Composable private fun PdfDocument(modifier: Modifier, fileName: String?, pages: List<android.graphics.Bitmap>) {
+@Composable private fun PdfDocument(modifier: Modifier, fileName: String?, pages: List<PdfPage>) {
     LazyColumn(modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { Text(fileName ?: "PDF", style = MaterialTheme.typography.titleLarge) }
-        items(pages) { page -> Image(page.asImageBitmap(), contentDescription = "Pagina PDF", modifier = Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth) }
+        items(pages) { page -> 
+            when(page) {
+                is PdfPage.NativeText -> Text(page.text)
+                is PdfPage.OcrRequired -> Image(page.bitmap.asImageBitmap(), contentDescription = "Pagina PDF", modifier = Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth)
+            }
+        }
     }
 }

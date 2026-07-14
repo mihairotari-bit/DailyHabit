@@ -12,12 +12,22 @@ class DietStructureTokenizer @Inject constructor() {
         // Remove non-breaking spaces and invisible unicode characters
         text = text.replace("\u00A0", " ").replace("\u200B", "")
 
-        // Normalize common weird OCR artifacts and force newlines for structural headers:
+        // 1. Protect references
+        val referencesToProtect = listOf(
+            Regex("(?i)vedi\\s+alternative\\s+del\\s+pranzo") to "[[REF_LUNCH]]",
+            Regex("(?i)alternative\\s+pranzo") to "[[REF_LUNCH_SHORT]]"
+        )
+        
+        referencesToProtect.forEach { (pattern, placeholder) ->
+            text = text.replace(pattern, placeholder)
+        }
+
+        // 2. Normalize common weird OCR artifacts and force newlines for structural headers:
         val replacements = mapOf(
             Regex("(?i)G\\s*I\\s*O\\s*R\\s*N\\s*O\\s+C\\s*O\\s*N\\s+A\\s*L\\s*L\\s*E\\s*N\\s*A\\s*M\\s*E\\s*N\\s*T\\s*O\\s*[:\\-]*") to "\nGIORNO CON ALLENAMENTO\n",
             Regex("(?i)G\\s*I\\s*O\\s*R\\s*N\\s*O\\s+S\\s*E\\s*N\\s*Z\\s*A\\s+A\\s*L\\s*L\\s*E\\s*N\\s*A\\s*M\\s*E\\s*N\\s*T\\s*O\\s*[:\\-]*") to "\nGIORNO SENZA ALLENAMENTO\n",
             Regex("(?i)C\\s*O\\s*L\\s*A\\s*Z\\s*I\\s*O\\s*N\\s*E\\s*[:\\-]*") to "\nCOLAZIONE\n",
-            Regex("(?i)(?<!del\\s)(?<!alternative\\s)P\\s*R\\s*A\\s*N\\s*Z\\s*O\\s*[:\\-]*") to "\nPRANZO\n",
+            Regex("(?i)P\\s*R\\s*A\\s*N\\s*Z\\s*O\\s*[:\\-]*") to "\nPRANZO\n",
             Regex("(?i)M\\s*E\\s*R\\s*E\\s*N\\s*D\\s*A\\s*[:\\-]*") to "\nMERENDA\n",
             Regex("(?i)S\\s*P\\s*U\\s*N\\s*T\\s*I\\s*N\\s*O\\s*[:\\-]*") to "\nSPUNTINO\n",
             Regex("(?i)C\\s*E\\s*N\\s*A\\s*[:\\-]*") to "\nCENA\n",
@@ -34,6 +44,10 @@ class DietStructureTokenizer @Inject constructor() {
         replacements.forEach { (pattern, replacement) ->
             text = text.replace(pattern, replacement)
         }
+        
+        // 3. Restore protected references
+        text = text.replace("[[REF_LUNCH]]", "vedi alternative del pranzo")
+                   .replace("[[REF_LUNCH_SHORT]]", "alternative pranzo")
         
         return text.split('\n')
             .map { it.replace(Regex("\\s+"), " ").trim() }
