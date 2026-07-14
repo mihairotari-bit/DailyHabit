@@ -87,7 +87,7 @@ private fun UploadHeader() {
         androidx.compose.foundation.Image(
             painter = painterResource(R.drawable.app_icon),
             contentDescription = "Illustrazione alimentazione sana",
-            modifier = Modifier.size(112.dp).padding(start = 8.dp),
+            modifier = Modifier.size(100.dp).padding(start = 8.dp),
         )
     }
 }
@@ -103,14 +103,14 @@ private fun UploadDropZone(modifier: Modifier, onSelectFile: () -> Unit) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Surface(
-                modifier = Modifier.size(72.dp).shadow(14.dp, RoundedCornerShape(50), spotColor = Color(0x665C9246)),
+                modifier = Modifier.size(60.dp).shadow(14.dp, RoundedCornerShape(50), spotColor = Color(0x665C9246)),
                 shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surface,
-            ) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.FileUpload, null, Modifier.size(36.dp), tint = Forest) } }
-            Spacer(Modifier.height(16.dp))
+            ) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.FileUpload, null, Modifier.size(30.dp), tint = Forest) } }
+            Spacer(Modifier.height(12.dp))
             Text("PDF, Excel o CSV", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
             Row(
-                Modifier.clip(RoundedCornerShape(50)).background(Brush.horizontalGradient(listOf(ButtonStart, ButtonEnd))).clickable(onClick = onSelectFile).height(52.dp).padding(horizontal = 26.dp),
+                Modifier.clip(RoundedCornerShape(50)).background(Brush.horizontalGradient(listOf(ButtonStart, ButtonEnd))).clickable(onClick = onSelectFile).height(48.dp).padding(horizontal = 26.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
             ) {

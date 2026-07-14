@@ -146,17 +146,20 @@ fun BotanicalDecoration(modifier: Modifier = Modifier) {
 
 @Composable
 fun GlobalControlsBar(
-    showNewPlan: Boolean,
-    onOpenDrawer: () -> Unit,
-    onNewPlan: () -> Unit
+    onOpenDrawer: () -> Unit
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .height(80.dp)
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                top = 10.dp,
+                bottom = 6.dp
+            ),
+        contentAlignment = Alignment.CenterStart
     ) {
         FloatingActionButton(
             onClick = onOpenDrawer,
@@ -166,24 +169,14 @@ fun GlobalControlsBar(
             shape = CircleShape,
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
-            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp)
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = 2.dp
+            )
         ) {
-            Icon(Icons.Rounded.Menu, contentDescription = "Apri menu")
-        }
-
-        if (showNewPlan) {
-            FloatingActionButton(
-                onClick = onNewPlan,
-                modifier = Modifier
-                    .size(56.dp)
-                    .testTag("global_new_plan"),
-                shape = CircleShape,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp)
-            ) {
-                Icon(Icons.Rounded.Add, contentDescription = "Nuovo piano")
-            }
+            Icon(
+                Icons.Rounded.Menu,
+                contentDescription = "Apri menu"
+            )
         }
     }
 }
@@ -343,12 +336,12 @@ fun DailyHabitAppScaffold(
         }
     ) {
         Scaffold(
-            contentWindowInsets = WindowInsets.safeDrawing,
+            contentWindowInsets = WindowInsets.safeDrawing.only(
+                WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+            ),
             topBar = {
                 GlobalControlsBar(
-                    showNewPlan = currentRoute == AppDestination.SavedArea.route && hasPlan,
-                    onOpenDrawer = { scope.launch { drawerState.open() } },
-                    onNewPlan = { showNewPlanDialog = true }
+                    onOpenDrawer = { scope.launch { drawerState.open() } }
                 )
             }
         ) { innerPadding ->

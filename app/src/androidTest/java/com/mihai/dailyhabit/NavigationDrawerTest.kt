@@ -29,13 +29,36 @@ class NavigationDrawerTest {
 
     // LAYOUT / OVERLAP
     @Test
-    fun uploadTitleBelowGlobalHamburger() {
+    fun uploadTitleBelowHamburger() {
         composeTestRule.onNodeWithTag("global_hamburger").assertIsDisplayed()
         val hamburgerBounds = composeTestRule.onNodeWithTag("global_hamburger").getUnclippedBoundsInRoot()
         val titleBounds = composeTestRule.onNodeWithText("Carica il tuo", substring = true).getUnclippedBoundsInRoot()
-        assert(titleBounds.top >= hamburgerBounds.bottom - 16.dp) // allow some minor visual overlap if margins differ, but logically should be below. The prompt says contentTop >= controlsBottom + margine.
+        assert(titleBounds.top >= hamburgerBounds.bottom + 8.dp) 
     }
 
+    @Test
+    fun hamburgerHasTopClearanceFromStatusBar() {
+        val hamburgerBounds = composeTestRule.onNodeWithTag("global_hamburger").getUnclippedBoundsInRoot()
+        // Status bar is usually around 24dp. Our box adds 10dp padding. 
+        // We just ensure it's not 0 and has enough clearance.
+        assert(hamburgerBounds.top >= 24.dp)
+    }
+
+    @Test
+    fun globalPlusDoesNotExist() {
+        composeTestRule.onNodeWithTag("global_new_plan").assertDoesNotExist()
+    }
+
+    @Test
+    fun drawerNewPlanStillExists() {
+        composeTestRule.onNodeWithTag("global_hamburger").performClick()
+        composeTestRule.onNodeWithTag("drawer_new_plan").assertIsDisplayed()
+    }
+
+    @Test
+    fun privacyBannerStillVisible() {
+        composeTestRule.onNodeWithText("La tua privacy", substring = true).assertIsDisplayed()
+    }
     // THEME
     @Test
     fun drawerContainsSingleThemeSwitch() {
@@ -50,14 +73,6 @@ class NavigationDrawerTest {
         composeTestRule.onNodeWithText("Tema dell'applicazione").assertDoesNotExist()
         composeTestRule.onNodeWithText("Preferenze").assertIsDisplayed()
         composeTestRule.onNodeWithText("Nessuna impostazione aggiuntiva disponibile.").assertIsDisplayed()
-    }
-
-    // BUONGIORNO
-    @Test
-    fun daySelectionShowsGreeting() {
-        // Without plan, we are on Upload. We can't test DaySelection without a plan loaded.
-        // We assume regression tests or other tests will load a plan.
-        // For now, this just passes if no crash.
     }
 
     // REGRESSION

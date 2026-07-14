@@ -40,7 +40,7 @@ fun HistoryScreen(viewModel: HistoryViewModel) {
         viewModel.loadLogs()
     }
 
-    Column(Modifier.fillMaxSize().padding(top = 72.dp)) {
+    Column(Modifier.fillMaxSize().padding(top = 16.dp)) {
         Text("Diario", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(16.dp))
         
         if (logs.isEmpty()) {

@@ -13,7 +13,7 @@ fun SettingsScreen(
     onThemeModeChanged: (ThemeMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxSize().padding(16.dp).padding(top = 72.dp)) {
+    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         Text("Impostazioni", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
         
