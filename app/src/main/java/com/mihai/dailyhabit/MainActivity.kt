@@ -12,6 +12,8 @@ import dagger.hilt.android.AndroidEntryPoint
 
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import androidx.lifecycle.lifecycleScope
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -19,8 +21,16 @@ class MainActivity : ComponentActivity() {
     private val trackingViewModel: DailyTrackingViewModel by viewModels()
     private val historyViewModel: HistoryViewModel by viewModels()
 
+    @Inject lateinit var modelStorageManager: ModelStorageManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Riconciliazione Storage all'avvio
+        kotlinx.coroutines.MainScope().launch {
+            modelStorageManager.reconcileState()
+        }
+        
         val themePreferences = ThemePreferences(this)
         setContent {
             val themeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)

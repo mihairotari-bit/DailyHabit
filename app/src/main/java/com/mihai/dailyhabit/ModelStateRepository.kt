@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import dagger.hilt.android.qualifiers.ApplicationContext
+
 enum class ModelState {
     NOT_INSTALLED,
     CHECKING_STORAGE,
@@ -37,7 +39,7 @@ data class ModelMetadata(
 private val Context.modelDataStore: DataStore<Preferences> by preferencesDataStore(name = "model_metadata")
 
 @Singleton
-class ModelStateRepository @Inject constructor(private val context: Context) {
+class ModelStateRepository @Inject constructor(@ApplicationContext private val context: Context) {
 
     private val MODEL_ID = stringPreferencesKey("model_id")
     private val REVISION = stringPreferencesKey("revision")
