@@ -196,7 +196,7 @@ class DietParser @Inject constructor(
     }
 
     private class MealDraft(val groups: MutableList<OptionGroup> = mutableListOf(), var hasLunchAlternatives: Boolean = false) {
-        fun toMeal(type: MealType) = Meal(type, groups, hasLunchAlternatives)
+        fun toMeal(type: MealType) = Meal(type, listOf(MealOption(groups = groups)), hasLunchAlternatives)
     }
 
     private companion object {

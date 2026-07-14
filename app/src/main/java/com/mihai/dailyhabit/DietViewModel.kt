@@ -60,17 +60,21 @@ class DietViewModel @Inject constructor(
 
     fun updateFood(dayIndex: Int, mealIndex: Int, foodId: String, transform: (FoodItem) -> FoodItem) = updatePlan { plan ->
         plan.copy(days = plan.days.mapIndexed { d, day -> if (d != dayIndex) day else day.copy(meals = day.meals.mapIndexed { m, meal ->
-            if (m != mealIndex) meal else meal.copy(groups = meal.groups.map { group ->
-                group.copy(alternatives = group.alternatives.map { if (it.clientId == foodId) transform(it) else it })
+            if (m != mealIndex) meal else meal.copy(options = meal.options.map { option ->
+                option.copy(groups = option.groups.map { group ->
+                    group.copy(alternatives = group.alternatives.map { if (it.clientId == foodId) transform(it) else it })
+                })
             })
         }) })
     }
 
     fun removeFood(dayIndex: Int, mealIndex: Int, foodId: String) {
         updatePlan { plan -> plan.copy(days = plan.days.mapIndexed { d, day -> if (d != dayIndex) day else day.copy(meals = day.meals.mapIndexed { m, meal ->
-            if (m != mealIndex) meal else meal.copy(groups = meal.groups.map { group ->
-                group.copy(alternatives = group.alternatives.filterNot { it.clientId == foodId })
-            }.filter { it.alternatives.isNotEmpty() })
+            if (m != mealIndex) meal else meal.copy(options = meal.options.map { option ->
+                option.copy(groups = option.groups.map { group ->
+                    group.copy(alternatives = group.alternatives.filterNot { it.clientId == foodId })
+                }.filter { it.alternatives.isNotEmpty() })
+            }.filter { it.groups.isNotEmpty() })
         }) }) }
     }
 
@@ -91,7 +95,7 @@ class DietViewModel @Inject constructor(
             _state.value = DietUiState.Error("Il piano deve avere almeno un pasto.")
             return
         }
-        val hasFoods = plan.days.any { day -> day.meals.any { meal -> meal.groups.isNotEmpty() || meal.hasLunchAlternatives } }
+        val hasFoods = plan.days.any { day -> day.meals.any { meal -> meal.options.isNotEmpty() || meal.hasLunchAlternatives } }
         if (!hasFoods) {
             _state.value = DietUiState.Error("Nessun alimento o riferimento valido trovato.")
             return

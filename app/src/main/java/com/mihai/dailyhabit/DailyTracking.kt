@@ -80,7 +80,7 @@ class DailyTrackingViewModel @Inject constructor(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DailyTrackingScreen(viewModel: DailyTrackingViewModel, onNewPlan: () -> Unit, onToggleTheme: () -> Unit) {
+fun DailyTrackingScreen(viewModel: DailyTrackingViewModel, themeMode: ThemeMode, onNewPlan: () -> Unit, onToggleTheme: (ThemeMode) -> Unit) {
     val plan by viewModel.plan.collectAsState()
     val trained by viewModel.trained.collectAsState()
     val selectedMeal by viewModel.selectedMeal.collectAsState()
@@ -98,7 +98,7 @@ fun DailyTrackingScreen(viewModel: DailyTrackingViewModel, onNewPlan: () -> Unit
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             if (trained == null) {
-                DailyWelcomeScreen(onWorkout = { viewModel.setTrained(true) }, onRest = { viewModel.setTrained(false) }, onNewPlan = onNewPlan, onToggleTheme = onToggleTheme)
+                DailyWelcomeScreen(themeMode = themeMode, onWorkout = { viewModel.setTrained(true) }, onRest = { viewModel.setTrained(false) }, onNewPlan = onNewPlan, onToggleTheme = onToggleTheme)
             } else if (selectedMeal == null) {
                 Text("Che pasto stai facendo?", style = MaterialTheme.typography.headlineMedium)
                 
@@ -134,36 +134,45 @@ fun DailyTrackingScreen(viewModel: DailyTrackingViewModel, onNewPlan: () -> Unit
                 Text(selectedMeal!!.label, style = MaterialTheme.typography.headlineMedium)
                 
                 val reqType = if (trained == true) DayProfileType.TRAINING else DayProfileType.REST
-                val groups = viewModel.profileResolver.resolve(plan!!, reqType)?.meals?.find { it.type == selectedMeal }?.groups ?: emptyList()
+                val options = viewModel.profileResolver.resolve(plan!!, reqType)?.meals?.find { it.type == selectedMeal }?.options ?: emptyList()
                 
                 LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(groups) { group ->
-                        Text("Scegli un'opzione:", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                        group.alternatives.forEach { food ->
-                            val isSelected = consumedFoods[group.id] == food.name
-                            val containerColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
-                            val elevation by animateDpAsState(if (isSelected) 8.dp else 2.dp)
-                            ElevatedCard(
-                                onClick = { viewModel.toggleFood(group.id, food.name) },
-                                Modifier.fillMaxWidth(),
-                                colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
-                                elevation = CardDefaults.elevatedCardElevation(defaultElevation = elevation)
-                            ) {
-                                Row(
-                                    Modifier.padding(16.dp).fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                    options.forEachIndexed { optionIndex, option ->
+                        if (options.size > 1) {
+                            item {
+                                Text("Opzione ${optionIndex + 1}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                        option.groups.forEach { group ->
+                            item {
+                                Text("Scegli un'alternativa:", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                            }
+                            items(group.alternatives) { food ->
+                                val isSelected = consumedFoods[group.id] == food.name
+                                val containerColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
+                                val elevation by animateDpAsState(if (isSelected) 8.dp else 2.dp)
+                                ElevatedCard(
+                                    onClick = { viewModel.toggleFood(group.id, food.name) },
+                                    Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
+                                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = elevation)
                                 ) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text(food.name, style = MaterialTheme.typography.titleMedium)
-                                        Text(food.quantity, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    AnimatedVisibility(
-                                        visible = isSelected,
-                                        enter = fadeIn() + scaleIn(),
-                                        exit = fadeOut() + scaleOut()
+                                    Row(
+                                        Modifier.padding(16.dp).fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Icon(Icons.Default.CheckCircle, contentDescription = "Selezionato", tint = MaterialTheme.colorScheme.primary)
+                                        Column(Modifier.weight(1f)) {
+                                            Text(food.name, style = MaterialTheme.typography.titleMedium)
+                                            Text(food.quantity, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        AnimatedVisibility(
+                                            visible = isSelected,
+                                            enter = fadeIn() + scaleIn(),
+                                            exit = fadeOut() + scaleOut()
+                                        ) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = "Selezionato", tint = MaterialTheme.colorScheme.primary)
+                                        }
                                     }
                                 }
                             }

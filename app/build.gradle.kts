@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.icons)
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation(libs.androidx.window)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

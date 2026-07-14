@@ -65,11 +65,11 @@ class DietPlanRepository @Inject constructor(private val database: DietDatabase)
     suspend fun save(plan: DietPlan): Long {
         return database.withTransaction {
             val id = database.dietDao().insertPlan(DietPlanEntity(title = plan.title, type = plan.type.name))
-            val foods = plan.days.flatMap { day -> day.meals.flatMap { meal -> meal.groups.flatMap { group -> group.alternatives.map { food ->
+            val foods = plan.days.flatMap { day -> day.meals.flatMap { meal -> meal.options.flatMap { option -> option.groups.flatMap { group -> group.alternatives.map { food ->
                 FoodItemEntity(planId = id, day = day.day, mealType = meal.type.name, groupId = group.id, name = food.name,
                     quantity = food.quantity, calories = food.calories, proteinGrams = food.proteinGrams,
                     carbsGrams = food.carbsGrams, fatGrams = food.fatGrams)
-            } } } }
+            } } } } }
             if (foods.isNotEmpty()) database.dietDao().insertFoods(foods)
             id
         }
@@ -83,7 +83,7 @@ class DietPlanRepository @Inject constructor(private val database: DietDatabase)
                 val groups = mealFoods.groupBy { it.groupId }.map { (groupId, groupFoods) ->
                     OptionGroup(groupId, groupFoods.map { FoodItem(name = it.name, quantity = it.quantity, calories = it.calories, proteinGrams = it.proteinGrams, carbsGrams = it.carbsGrams, fatGrams = it.fatGrams) })
                 }
-                Meal(MealType.valueOf(mealType), groups)
+                Meal(MealType.valueOf(mealType), listOf(MealOption(groups = groups)))
             }
             DailyMeals(day, meals)
         }

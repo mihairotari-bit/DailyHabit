@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import dagger.hilt.android.AndroidEntryPoint
 
 import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -22,10 +23,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val themePreferences = ThemePreferences(this)
         setContent {
-            val isDarkTheme by themePreferences.isDarkTheme.collectAsState()
+            val themeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+            
+            val isDarkTheme = when (themeMode) {
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
+            }
+            
+            val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+
             HelloTheme(darkTheme = isDarkTheme) {
-                DietApp(dietViewModel, trackingViewModel, historyViewModel, isDarkTheme) { 
-                    themePreferences.toggleTheme() 
+                DietApp(dietViewModel, trackingViewModel, historyViewModel, themeMode) { newMode ->
+                    coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        themePreferences.setThemeMode(newMode)
+                    }
                 }
             }
         }

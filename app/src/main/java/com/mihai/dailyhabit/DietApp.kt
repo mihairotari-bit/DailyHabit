@@ -61,7 +61,7 @@ private val dietMimeTypes = arrayOf("text/plain", "application/pdf", "applicatio
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DietApp(viewModel: DietViewModel, trackingViewModel: DailyTrackingViewModel, historyViewModel: HistoryViewModel, darkTheme: Boolean, onToggleTheme: () -> Unit) {
+fun DietApp(viewModel: DietViewModel, trackingViewModel: DailyTrackingViewModel, historyViewModel: HistoryViewModel, themeMode: ThemeMode, onToggleTheme: (ThemeMode) -> Unit) {
     val state by viewModel.state.collectAsState()
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? -> uri?.let(viewModel::import) }
     Scaffold(
@@ -77,7 +77,7 @@ fun DietApp(viewModel: DietViewModel, trackingViewModel: DailyTrackingViewModel,
                 onFoodChange = { day, meal, id, replacement -> viewModel.updateFood(day, meal, id) { replacement } },
                 modifier = Modifier.fillMaxSize().padding(padding),
             )
-            is DietUiState.Saved -> MainScreen(trackingViewModel, historyViewModel, onReset = viewModel::clearStoredPlan, onToggleTheme = onToggleTheme)
+            is DietUiState.Saved -> MainScreen(trackingViewModel, historyViewModel, themeMode = themeMode, onReset = viewModel::clearStoredPlan, onToggleTheme = onToggleTheme)
             is DietUiState.Error -> ErrorPanel(Modifier.fillMaxSize().padding(padding), current.message, viewModel::dismissError)
         }
     }
@@ -89,8 +89,9 @@ enum class MainTab { OGGI, DIARIO }
 fun MainScreen(
     trackingViewModel: DailyTrackingViewModel,
     historyViewModel: HistoryViewModel,
+    themeMode: ThemeMode,
     onReset: () -> Unit,
-    onToggleTheme: () -> Unit,
+    onToggleTheme: (ThemeMode) -> Unit,
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -150,7 +151,7 @@ fun MainScreen(
             modifier = Modifier.padding(padding).fillMaxSize()
         ) {
             composable("oggi") {
-                DailyTrackingScreen(trackingViewModel, onNewPlan = { showResetDialog = true }, onToggleTheme = onToggleTheme)
+                DailyTrackingScreen(trackingViewModel, themeMode = themeMode, onNewPlan = { showResetDialog = true }, onToggleTheme = onToggleTheme)
             }
             composable("diario") {
                 HistoryScreen(historyViewModel)

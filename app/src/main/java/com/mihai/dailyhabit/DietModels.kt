@@ -1,6 +1,10 @@
 package com.mihai.dailyhabit
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.descriptors.SerialDescriptor
 import java.util.UUID
 
 @Serializable
@@ -32,18 +36,55 @@ data class DailyMeals(
     val profileType: DayProfileType = DayProfileType.UNKNOWN
 )
 
-@Serializable
+@Serializable(with = MealSerializer::class)
 data class Meal(
     val type: MealType,
-    val groups: List<OptionGroup>,
+    val options: List<MealOption> = emptyList(),
     /** Cena may reference lunch choices without creating a fake food row. */
     val hasLunchAlternatives: Boolean = false,
 )
 
 @Serializable
+private data class MealSurrogate(
+    val type: MealType,
+    val options: List<MealOption> = emptyList(),
+    val groups: List<OptionGroup> = emptyList(),
+    val hasLunchAlternatives: Boolean = false
+) {
+    fun toMeal(): Meal {
+        val mergedOptions = if (options.isEmpty() && groups.isNotEmpty()) {
+            listOf(MealOption(groups = groups))
+        } else {
+            options
+        }
+        return Meal(type, mergedOptions, hasLunchAlternatives)
+    }
+}
+
+object MealSerializer : KSerializer<Meal> {
+    override val descriptor: SerialDescriptor = MealSurrogate.serializer().descriptor
+
+    override fun serialize(encoder: Encoder, value: Meal) {
+        // We only serialize options now, groups is empty
+        val surrogate = MealSurrogate(value.type, value.options, emptyList(), value.hasLunchAlternatives)
+        MealSurrogate.serializer().serialize(encoder, surrogate)
+    }
+
+    override fun deserialize(decoder: Decoder): Meal {
+        return MealSurrogate.serializer().deserialize(decoder).toMeal()
+    }
+}
+
+@Serializable
+data class MealOption(
+    val id: String = UUID.randomUUID().toString(),
+    val groups: List<OptionGroup> = emptyList()
+)
+
+@Serializable
 data class OptionGroup(
     val id: String = UUID.randomUUID().toString(),
-    val alternatives: List<FoodItem>
+    val alternatives: List<FoodItem> = emptyList()
 )
 
 @Serializable
