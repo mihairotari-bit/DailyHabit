@@ -269,8 +269,9 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
                 .then(if (shouldScroll) Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()) else Modifier),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(12.dp))
+            // No top spacer, start immediately
             
+
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -286,7 +287,7 @@ fun DaySelectionScreen(onTrainingSelected: () -> Unit, onRestSelected: () -> Uni
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Pronto a prenderti cura\ndi te oggi?", 
+                        "Pronto a prenderti cura di te oggi?", 
                         style = MaterialTheme.typography.titleLarge, 
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 28.sp

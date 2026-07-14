@@ -365,7 +365,10 @@ fun DailyHabitAppScaffold(
                 startDestination = if (hasPlan) AppDestination.SavedArea.route else AppDestination.DataFlow.route,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = if (currentRoute == AppDestination.SavedArea.route) 0.dp else innerPadding.calculateBottomPadding()
+                    )
             ) {
                 composable(AppDestination.DataFlow.route) {
                     DietAppDataFlow(dietViewModel, modifier = Modifier.fillMaxSize())
