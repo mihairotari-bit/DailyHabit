@@ -13,11 +13,15 @@ class FakeDietInferenceEngine @Inject constructor() : DietInferenceEngine {
                     meals = listOf(
                         Meal(
                             type = MealType.BREAKFAST,
-                            groups = listOf(
-                                OptionGroup(
-                                    alternatives = listOf(
-                                        FoodItem(name = "Latte", quantity = "200ml"),
-                                        FoodItem(name = "Fette biscottate", quantity = "30g")
+                            options = listOf(
+                                MealOption(
+                                    groups = listOf(
+                                        OptionGroup(
+                                            alternatives = listOf(
+                                                FoodItem(name = "Latte", quantity = "200ml"),
+                                                FoodItem(name = "Fette biscottate", quantity = "30g")
+                                            )
+                                        )
                                     )
                                 )
                             )

@@ -25,7 +25,6 @@ class DietParser @Inject constructor(
                 val end = if (i + 1 < dayMatches.size) dayMatches[i + 1].range.first else sanitizedText.length
                 blocks.add(sanitizedText.substring(start, end))
             }
-            // Add anything before the first day as an implicit block (or discard if it's noise)
             val preamble = sanitizedText.substring(0, dayMatches[0].range.first).trim()
             if (preamble.isNotBlank()) blocks.add(0, preamble)
         }
@@ -33,6 +32,7 @@ class DietParser @Inject constructor(
         for (block in blocks) {
             var currentDay: String? = null
             var currentMeal: MealType? = null
+            var currentOption: MutableList<MutableList<FoodItem>>? = null
             var currentGroup: MutableList<FoodItem>? = null
             var dinnerUsesLunch = false
 
@@ -43,31 +43,38 @@ class DietParser @Inject constructor(
             }
             fun flushGroup() {
                 val group = currentGroup
-                if (!group.isNullOrEmpty()) mealDraft()?.groups?.add(OptionGroup(alternatives = group.toList()))
+                if (!group.isNullOrEmpty()) {
+                    if (currentOption == null) {
+                        currentOption = mutableListOf()
+                        mealDraft()?.options?.add(currentOption!!)
+                    }
+                    currentOption?.add(group.toMutableList())
+                }
                 currentGroup = null
+            }
+            fun startOption() {
+                flushGroup()
+                currentOption = mutableListOf()
+                mealDraft()?.options?.add(currentOption!!)
             }
             fun startGroup() { flushGroup(); currentGroup = mutableListOf() }
 
             val lines = chunkOcrLines(block)
             lines.forEachIndexed { index, line ->
                 dayFor("$line ${lines.getOrNull(index + 1).orEmpty()}")?.let { day ->
-                    flushGroup(); currentDay = day; currentMeal = null; dinnerUsesLunch = false; return@forEachIndexed
+                    flushGroup(); currentOption = null; currentDay = day; currentMeal = null; dinnerUsesLunch = false; return@forEachIndexed
                 }
                 
-                // Heuristic: Auto-assign day if missing
                 if (currentDay == null) currentDay = "Giorno con allenamento"
 
                 mealFor(line)?.let { meal ->
-                    flushGroup(); currentMeal = meal; dinnerUsesLunch = false; return@forEachIndexed
+                    flushGroup(); currentOption = null; currentMeal = meal; dinnerUsesLunch = false; return@forEachIndexed
                 }
-                
-                // Heuristic: Auto-assign meal to BREAKFAST if parsing started without one
-                if (currentMeal == null) currentMeal = MealType.BREAKFAST
 
-                if (OPTION_MARKER.containsMatchIn(line)) { startGroup(); return@forEachIndexed }
-                if (line == "+") return@forEachIndexed
+                if (OPTION_MARKER.containsMatchIn(line)) { startOption(); return@forEachIndexed }
+                if (line == "+") { startGroup(); return@forEachIndexed }
                 if (LUNCH_REFERENCE.containsMatchIn(line)) {
-                    if (currentMeal == MealType.DINNER) {
+                    if (currentMeal == MealType.DINNER || currentMeal == MealType.LUNCH /* Rest day lunch might point to training day lunch */) {
                         dinnerUsesLunch = true
                         mealDraft()?.hasLunchAlternatives = true
                     }
@@ -110,9 +117,7 @@ class DietParser @Inject constructor(
     }
 
     private fun normalize(input: String): String = input.replace(Regex("\\s+"), " ").trim()
-    /**
-     * OCR may split one food across visual rows.
-     */
+    
     private fun chunkOcrLines(text: String): List<String> {
         val source = text.lineSequence().map(::normalize).filter(String::isNotEmpty).toList()
         val chunks = mutableListOf<String>()
@@ -127,6 +132,7 @@ class DietParser @Inject constructor(
         flush()
         return chunks
     }
+    
     private fun dayFor(line: String): String? {
         val weekMatch = Regex("(?i)(?:^|\\s)(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica)(?:\\s|$)").find(line)
         if (weekMatch != null) return weekMatch.groupValues[1].trim().replaceFirstChar { it.uppercase() }
@@ -134,6 +140,7 @@ class DietParser @Inject constructor(
         if (DAY_WITHOUT_WORKOUT.containsMatchIn(line)) return "Giorno senza allenamento"
         return null
     }
+    
     private fun mealFor(line: String): MealType? = when {
         Regex("(?i)^(pre[- ]?workout|pre[- ]?allenamento|prewout)\\b").containsMatchIn(line) -> MealType.PRE_WORKOUT
         Regex("(?i)^(post[- ]?workout|post[- ]?allenamento)\\b").containsMatchIn(line) -> MealType.POST_WORKOUT
@@ -144,6 +151,7 @@ class DietParser @Inject constructor(
         Regex("(?i)^cena\\b").containsMatchIn(line) -> MealType.DINNER
         else -> null
     }
+    
     private fun parseFood(input: String): FoodItem? {
         var line = input.replace(Regex("(?i)^oppure\\s*"), "").trim()
         if (line.isBlank() || LUNCH_REFERENCE.containsMatchIn(line)) return null
@@ -172,7 +180,6 @@ class DietParser @Inject constructor(
             line = line.replace(match.value, "").trim()
         }
 
-        // Cleanup any trailing hyphens or commas
         line = line.trim().trim('-', ':', ',').trim()
 
         val hit = QUANTITY_FIRST.matchEntire(line) ?: QUANTITY_LAST.matchEntire(line)
@@ -182,7 +189,6 @@ class DietParser @Inject constructor(
             return name.takeIf { it.length > 1 }?.let { FoodItem(name = it, quantity = quantity, calories = calories, proteinGrams = proteinGrams, carbsGrams = carbsGrams, fatGrams = fatGrams) }
         }
 
-        // Heuristic Fallback
         val heuristicHit = QUANTITY_FIRST_FIND.find(line) ?: QUANTITY_LAST_FIND.find(line)
         if (heuristicHit != null) {
             val name = heuristicHit.groups["name"]?.value?.trim()?.trim('-', ':', ',')?.trim() ?: return null
@@ -190,13 +196,17 @@ class DietParser @Inject constructor(
             return name.takeIf { it.length > 1 }?.let { FoodItem(name = it, quantity = quantity, calories = calories, proteinGrams = proteinGrams, carbsGrams = carbsGrams, fatGrams = fatGrams) }
         }
 
-        // Catch-All Strategy: Se non ci sono grammature esatte (es. "Una mela", "Verdure a piacere"), 
-        // cattura l'intera riga come alimento invece di scartarlo silenziosamente.
-        return line.takeIf { it.length > 2 }?.let { FoodItem(name = it, quantity = "", calories = calories, proteinGrams = proteinGrams, carbsGrams = carbsGrams, fatGrams = fatGrams) }
+        return null // Catch-all removed. Only exact matches with quantities count as foods.
     }
 
-    private class MealDraft(val groups: MutableList<OptionGroup> = mutableListOf(), var hasLunchAlternatives: Boolean = false) {
-        fun toMeal(type: MealType) = Meal(type, listOf(MealOption(groups = groups)), hasLunchAlternatives)
+    private class MealDraft(var hasLunchAlternatives: Boolean = false) {
+        val options: MutableList<MutableList<MutableList<FoodItem>>> = mutableListOf()
+        fun toMeal(type: MealType): Meal {
+            val mealOptions = options.map { opt ->
+                MealOption(groups = opt.map { grp -> OptionGroup(alternatives = grp.toList()) })
+            }.filter { it.groups.isNotEmpty() }
+            return Meal(type, mealOptions, hasLunchAlternatives)
+        }
     }
 
     private companion object {

@@ -13,7 +13,7 @@ class LegacyDeterministicDietInferenceEngineTest {
 
     @Test
     fun `engine wraps parsed plan with metadata`() = runBlocking {
-        val input = "Lunedì\nColazione\n1 mela"
+        val input = "Lunedì\nColazione\n150 g mela"
         val result = engine.parse(input)
         
         assertEquals(ParserEngine.LEGACY_DETERMINISTIC, result.parserEngine)

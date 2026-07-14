@@ -18,6 +18,11 @@ class RotariSanitizedGoldenTest {
         val fixtureText = File("src/test/resources/fixtures/rotari_real_sanitized_extracted_text.txt").readText()
 
         val plan = engine.parse(fixtureText)
+        println("DAYS FOUND: ${plan.days.size}")
+        plan.days.forEach { day -> 
+            println("DAY: ${day.day}, PROFILE: ${day.profileType}, MEALS: ${day.meals.size}")
+            day.meals.forEach { meal -> println("  MEAL: ${meal.type}, OPTIONS: ${meal.options.size}") }
+        }
 
         // General assertions
         assertEquals(ParserEngine.LEGACY_DETERMINISTIC, plan.parserEngine)
@@ -42,24 +47,24 @@ class RotariSanitizedGoldenTest {
         assertTrue("Should have DINNER", tMeals.any { it.type == MealType.DINNER })
 
         val preWorkout = tMeals.first { it.type == MealType.PRE_WORKOUT }
-        assertTrue("Pre-workout should have 50 g maltodestrine enervit", preWorkout.groups.any { group -> 
+        assertTrue("Pre-workout should have 50 g maltodestrine enervit", preWorkout.options.flatMap { it.groups }.any { group -> 
             group.alternatives.any { it.name.contains("maltodestrine", true) && it.quantity.contains("50") } 
         })
 
         val postWorkout = tMeals.first { it.type == MealType.POST_WORKOUT }
-        assertTrue("Post-workout should have 30 g whey idrolizzate", postWorkout.groups.any { group -> 
+        assertTrue("Post-workout should have 30 g whey idrolizzate", postWorkout.options.flatMap { it.groups }.any { group -> 
             group.alternatives.any { it.name.contains("whey idrolizzate", true) && it.quantity.contains("30") } 
         })
         
         val trainingBreakfast = tMeals.first { it.type == MealType.BREAKFAST }
-        assertTrue("Colazione training: 220 g latte", trainingBreakfast.groups.any { group ->
+        assertTrue("Colazione training: 220 g latte", trainingBreakfast.options.flatMap { it.groups }.any { group ->
             group.alternatives.any { it.name.contains("latte", true) && it.quantity.contains("220") }
         })
 
         val trainingSnack = tMeals.first { it.type == MealType.SNACK }
-        assertTrue("Merenda training: 25 g frutta secca", trainingSnack.groups.any { g -> g.alternatives.any { it.name.contains("frutta secca", true) && it.quantity.contains("25") } })
-        assertTrue("Merenda training: 100 g pane di grano duro", trainingSnack.groups.any { g -> g.alternatives.any { it.name.contains("pane di grano duro", true) && it.quantity.contains("100") } })
-        assertTrue("Merenda training: 40 g marmellata", trainingSnack.groups.any { g -> g.alternatives.any { it.name.contains("marmellata", true) && it.quantity.contains("40") } })
+        assertTrue("Merenda training: 25 g frutta secca", trainingSnack.options.flatMap { it.groups }.any { g -> g.alternatives.any { it.name.contains("frutta secca", true) && it.quantity.contains("25") } })
+        assertTrue("Merenda training: 100 g pane di grano duro", trainingSnack.options.flatMap { it.groups }.any { g -> g.alternatives.any { it.name.contains("pane di grano duro", true) && it.quantity.contains("100") } })
+        assertTrue("Merenda training: 40 g marmellata", trainingSnack.options.flatMap { it.groups }.any { g -> g.alternatives.any { it.name.contains("marmellata", true) && it.quantity.contains("40") } })
 
         val trainingDinner = tMeals.first { it.type == MealType.DINNER }
         assertTrue("Dinner should reference lunch alternatives", trainingDinner.hasLunchAlternatives)
@@ -67,7 +72,7 @@ class RotariSanitizedGoldenTest {
         assertTrue("Calorie training: 2643", fixtureText.contains("Calorie: 2643 kcal"))
 
         // ====== REST ASSERTIONS ======
-        val rMeals = restDay!!.meals
+        val rMeals = plan.days.first { it.profileType == DayProfileType.REST }.meals
         assertFalse("Should NOT have PRE_WORKOUT in rest day", rMeals.any { it.type == MealType.PRE_WORKOUT })
         assertFalse("Should NOT have POST_WORKOUT in rest day", rMeals.any { it.type == MealType.POST_WORKOUT })
         assertTrue("Should have BREAKFAST", rMeals.any { it.type == MealType.BREAKFAST })
@@ -76,14 +81,14 @@ class RotariSanitizedGoldenTest {
         assertTrue("Should have DINNER", rMeals.any { it.type == MealType.DINNER })
 
         val restSnack = rMeals.first { it.type == MealType.SNACK }
-        assertTrue("Merenda rest: 80 g pane di grano duro", restSnack.groups.any { g -> g.alternatives.any { it.name.contains("pane di grano duro", true) && it.quantity.contains("80") } })
-        assertTrue("Merenda rest: 20 g marmellata", restSnack.groups.any { g -> g.alternatives.any { it.name.contains("marmellata", true) && it.quantity.contains("20") } })
-        assertTrue("Merenda rest: 15 g frutta secca", restSnack.groups.any { g -> g.alternatives.any { it.name.contains("frutta secca", true) && it.quantity.contains("15") } })
+        assertTrue("Merenda rest: 80 g pane di grano duro", restSnack.options.flatMap { it.groups }.any { g -> g.alternatives.any { it.name.contains("pane di grano duro", true) && it.quantity.contains("80") } })
+        assertTrue("Merenda rest: 20 g marmellata", restSnack.options.flatMap { it.groups }.any { g -> g.alternatives.any { it.name.contains("marmellata", true) && it.quantity.contains("20") } })
+        assertTrue("Merenda rest: 15 g frutta secca", restSnack.options.flatMap { it.groups }.any { g -> g.alternatives.any { it.name.contains("frutta secca", true) && it.quantity.contains("15") } })
 
         assertTrue("Calorie rest: 2007", fixtureText.contains("Calorie: 2007 kcal"))
 
         // Checks for invalid parsing
-        val allAlternatives = plan.days.flatMap { it.meals }.flatMap { it.groups }.flatMap { it.alternatives }
+        val allAlternatives = plan.days.flatMap { it.meals }.flatMap { it.options }.flatMap { it.groups }.flatMap { it.alternatives }
         assertFalse("oppure non diventa FoodItem", allAlternatives.any { it.name.lowercase().startsWith("oppure") })
         assertFalse("le note non diventano alimenti", allAlternatives.any { it.name.lowercase().startsWith("note:") })
         assertFalse("nessun Lunedì inventato", plan.days.any { it.day.contains("Lunedì") })
